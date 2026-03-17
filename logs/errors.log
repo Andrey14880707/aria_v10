@@ -1,0 +1,867 @@
+time=2026-03-16T20:35:48.579123
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:35:49.019805
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:35:49.283814
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:35:49.553776
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:35:49.808675
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:35:50.039656
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:35:58.955094
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:35:59.208980
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:35:59.567746
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:01.016518
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:01.275311
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:01.512871
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:02.026171
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:02.290456
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:03.596255
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:14.717656
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:15.134152
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:15.398568
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:17.164086
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:26.371123
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:26.631765
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:26.900653
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:28.932318
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:29.203653
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:29.571713
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:29.812136
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:30.492268
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:30.732362
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:31.015824
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:34.022519
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:34.793082
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:35.032000
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:35.819000
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:36.114076
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:37.393675
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:37.708539
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:38.986976
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:39.243150
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:40.542101
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:40.792214
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:41.141146
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:41.382293
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:41.629231
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:42.064633
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:42.334298
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:42.782766
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:43.080855
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T20:36:43.499419
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T21:02:57.408339
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T21:03:00.469452
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
+time=2026-03-16T21:03:00.693175
+context=main_loop
+error=LLMError('429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization\'s rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok')
+traceback=
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/home/aria_v10/main.py", line 432, in main
+    answer = agent.respond(user)
+  File "/data/data/com.termux/files/home/aria_v10/agent.py", line 141, in respond
+    reply = self.llm.chat(
+        messages=messages,
+        system=self._system_prompt(),
+    )
+  File "/data/data/com.termux/files/home/aria_v10/llm.py", line 52, in chat
+    raise LLMError(f"{r.status_code}: {r.text[:400]}")
+llm.LLMError: 429: {"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed your organization's rate limit of 30,000 input tokens per minute (org: 327d7ad9-4349-402f-a6ae-dcb8cc0ec7b1, model: claude-sonnet-4-20250514). For details, refer to: https://docs.claude.com/en/api/rate-limits. You can see the response headers for current usage. Please reduce the prompt length or the maximum tok
+
+------------------------------------------------------------
