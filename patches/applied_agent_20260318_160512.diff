@@ -1,0 +1,23 @@
+--- a/agent.py
++++ b/agent.py
+@@ -1,4 +1,3 @@
+-# agent.py
+ import json
+ from typing import Dict, Any, List
+ 
+@@ -109,7 +108,8 @@
+         return base
+ 
+     def _build_messages(self, user_text: str) -> List[Dict[str, str]]:
+-        history = self.db.history(limit=15)
++        # Reduced history limit to mitigate rate limit and token limit errors
++        history = self.db.history(limit=7) 
+         messages: List[Dict[str, str]] = []
+ 
+         for h in history:
+@@ -190,4 +190,4 @@
+         self.db.save_message("user", user_text, self.state.session_id)
+         self.db.save_message("assistant", reply, self.state.session_id)
+ 
+-        return reply
++        return reply
