@@ -293,6 +293,20 @@ class MemoryDB:
             "tool_events": int(tools),
         }
 
+    def search_messages_text(self, query: str, limit: int = 50) -> List[Dict[str, str]]:
+        q = f"%{query.lower()}%"
+        with self.lock:
+            rows = self.conn.execute(
+                """
+                SELECT role, content FROM messages
+                WHERE lower(content) LIKE ?
+                ORDER BY id DESC
+                LIMIT ?
+                """,
+                (q, limit),
+            ).fetchall()
+        return [{"role": row["role"], "content": row["content"]} for row in rows]
+
     def _get_latest_session_id(self) -> Optional[int]:
         with self.lock:
             row = self.conn.execute(

@@ -7,6 +7,11 @@ from llm import AnthropicClient
 from state import AgentState
 from tools import ToolRunner
 
+try:
+    from memory import SemanticMemory
+except Exception:
+    SemanticMemory = None
+
 
 class Agent:
     def __init__(
@@ -20,6 +25,7 @@ class Agent:
         self.db = db
         self.state = state
         self.tools = tools
+        self.semantic_memory = SemanticMemory(db) if SemanticMemory else None
 
     def _system_prompt(self) -> str:
         return """
@@ -80,6 +86,9 @@ class Agent:
 - run_termux_intent
 - sleep
 - echo
+- read_webpage — загрузить страницу и вернуть текст (args: url)
+- listen — голосовой ввод через микрофон (только в голосовом режиме)
+- recall_memory — семантический поиск по памяти (args: query)
 
 Примеры:
 Пользователь: открой instagram
@@ -138,9 +147,19 @@ class Agent:
     def respond(self, user_text: str) -> str:
         messages = self._build_messages(user_text)
 
+        # Добавляем семантический контекст из памяти
+        system = self._system_prompt()
+        if self.semantic_memory:
+            try:
+                mem_context = self.semantic_memory.relevant_context(user_text, max_chars=600)
+                if mem_context:
+                    system += f"\n\nРелевантные воспоминания:\n{mem_context}"
+            except Exception:
+                pass
+
         reply = self.llm.chat(
             messages=messages,
-            system=self._system_prompt(),
+            system=system,
         )
 
         if not reply:
@@ -167,7 +186,7 @@ class Agent:
 
                 final = self.llm.chat(
                     messages=follow_messages,
-                    system=self._system_prompt(),
+                    system=system,
                 )
 
                 self.db.save_message("user", user_text, self.state.session_id)

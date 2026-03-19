@@ -1,0 +1,42 @@
+name: aria_app
+description: ARIA — Local AI Assistant for Android
+publish_to: none
+version: 10.0.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+  flutter: ">=3.19.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Networking
+  http: ^1.2.1
+
+  # State management
+  provider: ^6.1.2
+
+  # Persistence
+  shared_preferences: ^2.3.1
+
+  # Markdown rendering
+  flutter_markdown: ^0.7.3
+
+  # Date formatting
+  intl: ^0.19.0
+
+  # Syntax highlighting in code blocks
+  flutter_highlight: ^0.7.0
+  highlight: ^0.7.0
+
+  # JSON viewer for tool results
+  json_theme: ^5.0.7
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true

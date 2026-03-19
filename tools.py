@@ -208,28 +208,96 @@ class ToolRunner:
         if not query:
             raise ToolPolicyError("empty_query")
 
-        r = requests.get(
-            "https://api.duckduckgo.com/",
-            params={
-                "q": query,
-                "format": "json",
-                "no_html": 1,
-                "skip_disambig": 1,
-            },
-            timeout=15,
-        )
-        data = r.json()
-        text = data.get("AbstractText") or data.get("Answer") or ""
+        # Попытка 1: DDG Instant Answer API
+        try:
+            r = requests.get(
+                "https://api.duckduckgo.com/",
+                params={
+                    "q": query,
+                    "format": "json",
+                    "no_html": 1,
+                    "skip_disambig": 1,
+                },
+                timeout=15,
+            )
+            data = r.json()
+            abstract = data.get("AbstractText") or data.get("Answer") or ""
+            abstract_url = data.get("AbstractURL") or ""
+        except Exception:
+            abstract = ""
+            abstract_url = ""
 
-        if not text:
-            related = data.get("RelatedTopics", [])
+        # Попытка 2: DDG HTML search для получения реальных ссылок
+        links_text = ""
+        try:
+            headers = {"User-Agent": "Mozilla/5.0 (compatible; ARIABot/1.0)"}
+            html_r = requests.get(
+                "https://html.duckduckgo.com/html/",
+                params={"q": query},
+                headers=headers,
+                timeout=15,
+            )
+            import re
+            # Извлекаем заголовки и URL результатов
+            snippets = re.findall(
+                r'<a[^>]+class="result__a"[^>]*href="([^"]+)"[^>]*>([^<]+)</a>',
+                html_r.text,
+            )
+            result_snippets = re.findall(
+                r'class="result__snippet"[^>]*>([^<]+)<',
+                html_r.text,
+            )
             parts = []
-            for item in related[:5]:
-                if isinstance(item, dict) and item.get("Text"):
-                    parts.append(item["Text"])
-            text = "\n".join(parts) if parts else "Нет прямого ответа."
+            for i, (url, title) in enumerate(snippets[:5]):
+                title = title.strip()
+                snippet = result_snippets[i].strip() if i < len(result_snippets) else ""
+                parts.append(f"[{i+1}] {title}\n    {url}\n    {snippet}")
+            if parts:
+                links_text = "\n\n".join(parts)
+        except Exception:
+            pass
 
-        return text[:1200]
+        result_parts = []
+        if abstract:
+            src = f" ({abstract_url})" if abstract_url else ""
+            result_parts.append(f"Краткий ответ{src}:\n{abstract}")
+        if links_text:
+            result_parts.append(f"Результаты поиска:\n{links_text}")
+
+        if not result_parts:
+            return "Нет результатов."
+
+        return "\n\n".join(result_parts)[:2000]
+
+    def tool_read_webpage(self, args: Dict[str, Any]) -> str:
+        """Загружает веб-страницу и возвращает читаемый текст."""
+        self._network_allowed()
+        url = str(args.get("url", "")).strip()
+        if not url:
+            raise ToolPolicyError("missing_url")
+        if not url.startswith(("http://", "https://")):
+            url = "https://" + url
+
+        headers = {"User-Agent": "Mozilla/5.0 (compatible; ARIABot/1.0)"}
+        r = requests.get(url, headers=headers, timeout=20)
+        r.raise_for_status()
+
+        import re
+        html = r.text
+
+        # Убираем скрипты, стили, теги
+        html = re.sub(r"<(script|style)[^>]*>.*?</(script|style)>", " ", html, flags=re.DOTALL | re.IGNORECASE)
+        html = re.sub(r"<[^>]+>", " ", html)
+        html = re.sub(r"&[a-zA-Z]+;", " ", html)
+        html = re.sub(r"&#\d+;", " ", html)
+
+        # Нормализуем пробелы
+        lines = [line.strip() for line in html.splitlines()]
+        lines = [l for l in lines if len(l) > 30]
+        text = "\n".join(lines)
+        text = re.sub(r"\n{3,}", "\n\n", text)
+
+        return text[:4000]
 
     def tool_http_get(self, args: Dict[str, Any]) -> str:
         self._network_allowed()
@@ -348,3 +416,32 @@ class ToolRunner:
 
     def tool_echo(self, args: Dict[str, Any]) -> str:
         return str(args.get("text", ""))
+
+    def tool_listen(self, args: Dict[str, Any]) -> str:
+        """Записывает голосовой ввод через termux-speech-to-text."""
+        self._termux_allowed()
+        result = self._run(["termux-speech-to-text"], timeout=30)
+        if not result or result == "✓":
+            return "Голос не распознан."
+        return result.strip()
+
+    def tool_recall_memory(self, args: Dict[str, Any]) -> str:
+        """Семантический поиск по памяти (факты, заметки, история)."""
+        query = str(args.get("query", "")).strip()
+        if not query:
+            raise ToolPolicyError("empty_query")
+
+        from memory import SemanticMemory
+        mem = SemanticMemory(self.db)
+        results = mem.search(query, limit=8)
+        if not results:
+            return "Ничего не найдено в памяти."
+
+        lines = []
+        for item in results:
+            src = item.get("source", "?")
+            text = item.get("text", "")
+            score = item.get("score", 0.0)
+            lines.append(f"[{src}] (релевантность: {score:.2f})\n{text}")
+
+        return "\n\n".join(lines)[:2500]

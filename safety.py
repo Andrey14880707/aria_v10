@@ -43,6 +43,9 @@ ALLOWED_TOOLS = {
     "run_termux_intent",
     "sleep",
     "echo",
+    "read_webpage",
+    "listen",
+    "recall_memory",
 }
 
 
