@@ -1,12 +1,64 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+// ── Safe parse helpers ────────────────────────────────────────────────────────
+
+/// Safe String: handles null, int, double, bool → String.
+String _s(dynamic v, [String def = '']) {
+  if (v == null) return def;
+  if (v is String) return v;
+  return v.toString();
+}
+
+/// Safe int: handles null, String, double → int.
+int _i(dynamic v, [int def = 0]) {
+  if (v == null) return def;
+  if (v is int) return v;
+  if (v is double) return v.toInt();
+  if (v is String) return int.tryParse(v) ?? def;
+  return def;
+}
+
+/// Safe bool.
+bool _b(dynamic v, [bool def = false]) {
+  if (v == null) return def;
+  if (v is bool) return v;
+  if (v is String) return v.toLowerCase() == 'true';
+  if (v is int) return v != 0;
+  return def;
+}
+
+/// Safe List — never throws; returns [] for non-list values.
+List<dynamic> _l(dynamic v) {
+  if (v is List) return v;
+  if (v is Map) {
+    // Some endpoints wrap a list: {"items": [...]}
+    for (final key in ['items', 'data', 'results', 'list']) {
+      if (v[key] is List) return v[key] as List;
+    }
+  }
+  return [];
+}
+
+/// Safe Map — never throws; returns {} for non-map values.
+Map<String, dynamic> _m(dynamic v) {
+  if (v is Map<String, dynamic>) return v;
+  if (v is Map) {
+    try {
+      return v.map((k, val) => MapEntry(k.toString(), val));
+    } catch (_) {}
+  }
+  return {};
+}
+
+/// Safe List<String> from a dynamic list.
+List<String> _ls(dynamic v) => _l(v).map(_s).toList();
+
 // ── Exceptions ────────────────────────────────────────────────────────────────
 
 class ApiException implements Exception {
   final String message;
   final int? statusCode;
-
   const ApiException(this.message, {this.statusCode});
 
   @override
@@ -31,13 +83,24 @@ class ChatResult {
     required this.sessionId,
   });
 
-  factory ChatResult.fromJson(Map<String, dynamic> j) => ChatResult(
-        reply: j['reply'] as String? ?? '',
-        provider: j['provider'] as String? ?? '',
-        model: j['model'] as String? ?? '',
-        commandsRun: j['commands_run'] as int? ?? 0,
-        sessionId: j['session_id'] as int? ?? 0,
-      );
+  factory ChatResult.fromJson(dynamic raw) {
+    final j = _m(raw);
+    // Try reply → response → message → text in order
+    final reply = _s(j['reply']).isNotEmpty
+        ? _s(j['reply'])
+        : _s(j['response']).isNotEmpty
+            ? _s(j['response'])
+            : _s(j['message']).isNotEmpty
+                ? _s(j['message'])
+                : _s(j['text']);
+    return ChatResult(
+      reply: reply,
+      provider: _s(j['provider']),
+      model: _s(j['model']),
+      commandsRun: _i(j['commands_run']),
+      sessionId: _i(j['session_id']),
+    );
+  }
 }
 
 class MemoryStats {
@@ -55,13 +118,16 @@ class MemoryStats {
     required this.lastThought,
   });
 
-  factory MemoryStats.fromJson(Map<String, dynamic> j) => MemoryStats(
-        sessions: j['sessions'] as int? ?? 0,
-        facts: j['facts'] as int? ?? 0,
-        commandsRun: j['commands_run'] as int? ?? 0,
-        backgroundCycles: j['background_cycles'] as int? ?? 0,
-        lastThought: j['last_thought'] as String? ?? '',
-      );
+  factory MemoryStats.fromJson(dynamic raw) {
+    final j = _m(raw);
+    return MemoryStats(
+      sessions: _i(j['sessions']),
+      facts: _i(j['facts']),
+      commandsRun: _i(j['commands_run']),
+      backgroundCycles: _i(j['background_cycles']),
+      lastThought: _s(j['last_thought']),
+    );
+  }
 }
 
 class FactEntry {
@@ -77,12 +143,15 @@ class FactEntry {
     required this.source,
   });
 
-  factory FactEntry.fromJson(Map<String, dynamic> j) => FactEntry(
-        id: j['id'] as int,
-        fact: j['fact'] as String? ?? '',
-        createdAt: j['created_at'] as String? ?? '',
-        source: j['source'] as String? ?? '',
-      );
+  factory FactEntry.fromJson(dynamic raw) {
+    final j = _m(raw);
+    return FactEntry(
+      id: _i(j['id']),
+      fact: _s(j['fact']),
+      createdAt: _s(j['created_at']),
+      source: _s(j['source']),
+    );
+  }
 }
 
 class NoteEntry {
@@ -96,11 +165,14 @@ class NoteEntry {
     required this.createdAt,
   });
 
-  factory NoteEntry.fromJson(Map<String, dynamic> j) => NoteEntry(
-        id: j['id'] as int,
-        note: j['note'] as String? ?? '',
-        createdAt: j['created_at'] as String? ?? '',
-      );
+  factory NoteEntry.fromJson(dynamic raw) {
+    final j = _m(raw);
+    return NoteEntry(
+      id: _i(j['id']),
+      note: _s(j['note']),
+      createdAt: _s(j['created_at']),
+    );
+  }
 }
 
 class ProviderInfo {
@@ -116,12 +188,150 @@ class ProviderInfo {
     required this.models,
   });
 
-  factory ProviderInfo.fromJson(Map<String, dynamic> j) => ProviderInfo(
-        id: j['id'] as String,
-        name: j['name'] as String,
-        available: j['available'] as bool? ?? false,
-        models: (j['models'] as List?)?.cast<String>() ?? [],
-      );
+  factory ProviderInfo.fromJson(dynamic raw) {
+    final j = _m(raw);
+    return ProviderInfo(
+      id: _s(j['id']),
+      name: _s(j['name']),
+      available: _b(j['available']),
+      models: _ls(j['models']),
+    );
+  }
+}
+
+class SpaceManifest {
+  final String id;
+  final String name;
+  final String description;
+  final String type;
+  final String template;
+  final int version;
+  final String entrypoint;
+  final String status;
+  final String createdAt;
+  final String updatedAt;
+  final Map<String, bool> features;
+
+  const SpaceManifest({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.type,
+    required this.template,
+    required this.version,
+    required this.entrypoint,
+    required this.status,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.features,
+  });
+
+  factory SpaceManifest.fromJson(dynamic raw) {
+    final j = _m(raw);
+    final featRaw = j['features'];
+    final feat = <String, bool>{};
+    if (featRaw is Map) {
+      featRaw.forEach((k, v) => feat[k.toString()] = _b(v));
+    }
+    return SpaceManifest(
+      id: _s(j['id']),
+      name: _s(j['name']),
+      description: _s(j['description']),
+      type: _s(j['type']),
+      template: _s(j['template']),
+      version: _i(j['version'], 1),
+      entrypoint: _s(j['entrypoint'], 'index.html'),
+      status: _s(j['status']),
+      createdAt: _s(j['created_at']),
+      updatedAt: _s(j['updated_at']),
+      features: feat,
+    );
+  }
+
+  bool get previewable => features['preview'] == true;
+}
+
+class SpaceSummary {
+  final String id;
+  final String name;
+  final String type;
+  final String status;
+  final String updatedAt;
+
+  const SpaceSummary({
+    required this.id,
+    required this.name,
+    required this.type,
+    required this.status,
+    required this.updatedAt,
+  });
+
+  factory SpaceSummary.fromJson(dynamic raw) {
+    final j = _m(raw);
+    return SpaceSummary(
+      id: _s(j['id']),
+      name: _s(j['name']),
+      type: _s(j['type']),
+      status: _s(j['status']),
+      updatedAt: _s(j['updated_at']),
+    );
+  }
+}
+
+class SpaceFile {
+  final String path;
+  final int size;
+  const SpaceFile({required this.path, required this.size});
+  factory SpaceFile.fromJson(dynamic raw) {
+    final j = _m(raw);
+    return SpaceFile(path: _s(j['path']), size: _i(j['size']));
+  }
+}
+
+/// Log line — tolerates both `{"line":"..."}` and raw strings or rich objects.
+class LogLine {
+  final String text;
+  final String level;
+  final String ts;
+  final String tool;
+  final String status;
+
+  const LogLine({
+    required this.text,
+    this.level = '',
+    this.ts = '',
+    this.tool = '',
+    this.status = '',
+  });
+
+  factory LogLine.fromDynamic(dynamic e) {
+    if (e == null) return const LogLine(text: '');
+    if (e is String) return LogLine(text: e);
+    final j = _m(e);
+    // Accept "line", "message", "msg", "text" as the log text field
+    final text = _s(j['line']).isNotEmpty
+        ? _s(j['line'])
+        : _s(j['message']).isNotEmpty
+            ? _s(j['message'])
+            : _s(j['msg']).isNotEmpty
+                ? _s(j['msg'])
+                : _s(j['text']).isNotEmpty
+                    ? _s(j['text'])
+                    : j.toString();
+    return LogLine(
+      text: text,
+      level: _s(j['level']),
+      ts: _s(j['ts']),
+      tool: _s(j['tool']),
+      status: _s(j['status']),
+    );
+  }
+
+  /// Flat string for display / copy.
+  String get display {
+    if (ts.isNotEmpty) return '[$ts] $text';
+    return text;
+  }
 }
 
 // ── Service ───────────────────────────────────────────────────────────────────
@@ -135,26 +345,24 @@ class ApiService {
     this.timeout = const Duration(seconds: 60),
   });
 
-  // Trim trailing slash once
-  String get _base => baseUrl.endsWith('/')
-      ? baseUrl.substring(0, baseUrl.length - 1)
-      : baseUrl;
+  String get _base =>
+      baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
 
   Map<String, String> get _headers => {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       };
 
-  // ── helpers ──────────────────────────────────────────────────────────────
+  // ── HTTP helpers ─────────────────────────────────────────────────────────
 
   Future<dynamic> _get(String path) async {
     final uri = Uri.parse('$_base$path');
     try {
       final res = await http.get(uri, headers: _headers).timeout(timeout);
       if (res.statusCode >= 400) {
-        throw ApiException(_tryDecodeError(res.body), statusCode: res.statusCode);
+        throw ApiException(_decodeError(res.body), statusCode: res.statusCode);
       }
-      return jsonDecode(res.body);
+      return _decodeBody(res.body);
     } on ApiException {
       rethrow;
     } catch (e) {
@@ -169,9 +377,9 @@ class ApiService {
           .post(uri, headers: _headers, body: jsonEncode(body))
           .timeout(timeout);
       if (res.statusCode >= 400) {
-        throw ApiException(_tryDecodeError(res.body), statusCode: res.statusCode);
+        throw ApiException(_decodeError(res.body), statusCode: res.statusCode);
       }
-      return jsonDecode(res.body);
+      return _decodeBody(res.body);
     } on ApiException {
       rethrow;
     } catch (e) {
@@ -184,10 +392,10 @@ class ApiService {
     try {
       final res = await http.delete(uri, headers: _headers).timeout(timeout);
       if (res.statusCode >= 400) {
-        throw ApiException(_tryDecodeError(res.body), statusCode: res.statusCode);
+        throw ApiException(_decodeError(res.body), statusCode: res.statusCode);
       }
-      if (res.body.isEmpty) return {};
-      return jsonDecode(res.body);
+      if (res.body.trim().isEmpty) return <String, dynamic>{};
+      return _decodeBody(res.body);
     } on ApiException {
       rethrow;
     } catch (e) {
@@ -195,16 +403,25 @@ class ApiService {
     }
   }
 
-  String _tryDecodeError(String body) {
+  /// Decode JSON body — never throws; returns {} or [] on bad JSON.
+  dynamic _decodeBody(String body) {
+    if (body.trim().isEmpty) return <String, dynamic>{};
     try {
-      final j = jsonDecode(body) as Map<String, dynamic>;
-      return j['detail']?.toString() ?? body;
+      return jsonDecode(body);
     } catch (_) {
-      return body.length > 300 ? '${body.substring(0, 300)}…' : body;
+      return <String, dynamic>{'_raw': body};
     }
   }
 
-  // ── public API ────────────────────────────────────────────────────────────
+  String _decodeError(String body) {
+    try {
+      final j = jsonDecode(body);
+      if (j is Map) return _s(j['detail'] ?? j['error'] ?? j['message'], body);
+    } catch (_) {}
+    return body.length > 300 ? '${body.substring(0, 300)}…' : body;
+  }
+
+  // ── Public API ────────────────────────────────────────────────────────────
 
   Future<bool> checkHealth() async {
     try {
@@ -228,61 +445,64 @@ class ApiService {
       'provider': provider,
       'model': model,
     });
-    return ChatResult.fromJson(d as Map<String, dynamic>);
+    return ChatResult.fromJson(d);
   }
 
   Future<MemoryStats> getMemoryStats() async {
     final d = await _get('/memory');
-    return MemoryStats.fromJson(d as Map<String, dynamic>);
+    return MemoryStats.fromJson(d);
   }
 
   Future<List<FactEntry>> getFacts({String query = '', int limit = 50}) async {
     final q = Uri.encodeQueryComponent(query);
     final d = await _get('/facts?query=$q&limit=$limit');
-    return (d as List)
-        .map((e) => FactEntry.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return _l(d).map(FactEntry.fromJson).toList();
   }
 
   Future<List<NoteEntry>> getNotes({int limit = 50}) async {
     final d = await _get('/notes?limit=$limit');
-    return (d as List)
-        .map((e) => NoteEntry.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return _l(d).map(NoteEntry.fromJson).toList();
   }
 
-  Future<List<String>> getLogs({int lines = 200}) async {
+  /// Accepts list of strings, list of `{"line":"..."}` objects, or mixed.
+  Future<List<LogLine>> getLogs({int lines = 200}) async {
     final d = await _get('/logs?lines=$lines');
-    return (d as List).map((e) => (e as Map)['line'] as String).toList();
+    return _l(d).map(LogLine.fromDynamic).toList();
   }
 
+  /// Returns {shell_tools: [...], agent_tools: [...]}.
+  /// Tolerates missing keys, non-string elements, or flat list response.
   Future<Map<String, List<String>>> getTools() async {
     final d = await _get('/tools');
-    final m = d as Map<String, dynamic>;
+    if (d is List) {
+      // Flat list of tool name strings
+      return {'shell_tools': _ls(d), 'agent_tools': []};
+    }
+    final j = _m(d);
     return {
-      'shell_tools': (m['shell_tools'] as List?)?.cast<String>() ?? [],
-      'agent_tools': (m['agent_tools'] as List?)?.cast<String>() ?? [],
+      'shell_tools': _ls(j['shell_tools'] ?? j['tools'] ?? []),
+      'agent_tools': _ls(j['agent_tools'] ?? []),
     };
   }
 
-  /// Calls POST /execute — the 8 allowlisted shell/file/git tools.
+  /// POST /execute — 8 allowlisted shell/file/git tools.
   Future<String> executeShellTool(
       String tool, Map<String, dynamic> args) async {
     final d = await _post('/execute', {'tool': tool, 'args': args});
-    final m = d as Map<String, dynamic>;
-    if (m['status'] == 'error') {
-      throw ApiException(m['result']?.toString() ?? 'Unknown error');
+    final j = _m(d);
+    if (_s(j['status']) == 'error') {
+      throw ApiException(_s(j['result'], 'Unknown error'));
     }
-    return m['result']?.toString() ?? '';
+    return _s(j['result']);
   }
 
-  /// Calls POST /tools/execute — legacy Termux agent tools.
+  /// POST /tools/execute — legacy Termux agent tools.
   Future<String> executeTool(String tool, Map<String, dynamic> args) async {
     final d = await _post('/tools/execute', {'tool': tool, 'args': args});
-    return (d as Map)['result']?.toString() ?? '';
+    return _s(_m(d)['result']);
   }
 
-  /// Calls POST /build_apk — git add/commit/push → CI trigger.
+  /// POST /build_apk — git add/commit/push → CI trigger.
   Future<Map<String, dynamic>> buildApk({
     required String message,
     List<String> files = const [],
@@ -297,12 +517,11 @@ class ApiService {
       if (branch != null) 'branch': branch,
       'repo_path': repoPath,
     });
-    return d as Map<String, dynamic>;
+    return _m(d);
   }
 
   Future<Map<String, dynamic>> getSettings() async {
-    final d = await _get('/settings');
-    return d as Map<String, dynamic>;
+    return _m(await _get('/settings'));
   }
 
   Future<void> updateSettings(Map<String, dynamic> settings) async {
@@ -311,12 +530,63 @@ class ApiService {
 
   Future<List<ProviderInfo>> getProviders() async {
     final d = await _get('/providers');
-    return ((d as Map)['providers'] as List)
-        .map((e) => ProviderInfo.fromJson(e as Map<String, dynamic>))
-        .toList();
+    final j = _m(d);
+    final list = _l(j['providers'] ?? d);
+    return list.map(ProviderInfo.fromJson).toList();
   }
 
   Future<void> deleteFact(int id) => _delete('/memory/facts/$id');
 
   Future<void> clearMemory() => _delete('/memory/clear');
+
+  // ── Open Space ──────────────────────────────────────────────────────────────
+
+  Future<SpaceManifest> createSpace({
+    required String prompt,
+    String? name,
+  }) async {
+    final d = await _post('/spaces/create', {
+      'prompt': prompt,
+      if (name != null) 'name': name,
+    });
+    return SpaceManifest.fromJson(d);
+  }
+
+  Future<List<SpaceSummary>> listSpaces() async {
+    final d = await _get('/spaces');
+    return _l(d).map(SpaceSummary.fromJson).toList();
+  }
+
+  Future<SpaceManifest> getSpace(String id) async {
+    final d = await _get('/spaces/$id');
+    return SpaceManifest.fromJson(d);
+  }
+
+  Future<void> deleteSpace(String id) => _delete('/spaces/$id');
+
+  Future<SpaceManifest> duplicateSpace(String id, {String? name}) async {
+    final d = await _post('/spaces/$id/duplicate', {
+      if (name != null) 'name': name,
+    });
+    return SpaceManifest.fromJson(d);
+  }
+
+  Future<Map<String, dynamic>> patchSpace(String id, String prompt) async {
+    return _m(await _post('/spaces/$id/patch', {'prompt': prompt}));
+  }
+
+  Future<List<SpaceFile>> listSpaceFiles(String id) async {
+    final d = await _get('/spaces/$id/files');
+    return _l(d).map(SpaceFile.fromJson).toList();
+  }
+
+  Future<String> readSpaceFile(String id, String path) async {
+    final encoded = Uri.encodeQueryComponent(path);
+    final d = await _get('/spaces/$id/files/content?path=$encoded');
+    return _s(_m(d)['content']);
+  }
+
+  Future<void> writeSpaceFile(String id, String path, String content) async {
+    await _post('/spaces/$id/files', {'path': path, 'content': content});
+  }
 }

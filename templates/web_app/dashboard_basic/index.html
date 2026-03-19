@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Dashboard</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0f1923; color: #c8d8e8; font-family: 'Segoe UI', sans-serif; padding: 16px; }
+h1 { color: #7eb8f7; font-size: 1.4rem; margin-bottom: 16px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.card { background: #16283a; border-radius: 12px; padding: 16px; }
+.card .label { font-size: 0.75rem; color: #6090b0; margin-bottom: 6px; }
+.card .value { font-size: 1.8rem; font-weight: bold; color: #a0d4ff; }
+.card .sub { font-size: 0.75rem; color: #5aaa7a; margin-top: 4px; }
+.chart-wrap { background: #16283a; border-radius: 12px; padding: 16px; }
+.chart-wrap h3 { font-size: 0.85rem; color: #6090b0; margin-bottom: 12px; }
+.bars { display: flex; align-items: flex-end; gap: 6px; height: 80px; }
+.bar { flex: 1; background: #1a5090; border-radius: 4px 4px 0 0; transition: height 0.4s; }
+.bar-labels { display: flex; gap: 6px; margin-top: 4px; }
+.bar-labels span { flex: 1; text-align: center; font-size: 0.65rem; color: #6090b0; }
+</style>
+</head>
+<body>
+<h1>📊 Dashboard</h1>
+<div class="grid">
+  <div class="card"><div class="label">Users</div><div class="value" id="v1">—</div><div class="sub">↑ +12%</div></div>
+  <div class="card"><div class="label">Revenue</div><div class="value" id="v2">—</div><div class="sub">↑ +8%</div></div>
+  <div class="card"><div class="label">Sessions</div><div class="value" id="v3">—</div><div class="sub">↓ -3%</div></div>
+  <div class="card"><div class="label">Uptime</div><div class="value" id="v4">—</div><div class="sub">✓ Good</div></div>
+</div>
+<div class="chart-wrap">
+  <h3>Weekly Activity</h3>
+  <div class="bars" id="bars"></div>
+  <div class="bar-labels"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+</div>
+<script>
+document.getElementById('v1').textContent = (1200 + Math.floor(Math.random()*300)).toLocaleString();
+document.getElementById('v2').textContent = '$' + (8400 + Math.floor(Math.random()*1200)).toLocaleString();
+document.getElementById('v3').textContent = (3400 + Math.floor(Math.random()*600)).toLocaleString();
+document.getElementById('v4').textContent = '99.9%';
+const data = Array.from({length:7}, () => 20 + Math.floor(Math.random()*60));
+const max = Math.max(...data);
+const bars = document.getElementById('bars');
+data.forEach(v => {
+  const b = document.createElement('div');
+  b.className = 'bar';
+  b.style.height = (v / max * 70 + 10) + 'px';
+  b.title = v;
+  bars.appendChild(b);
+});
+</script>
+</body>
+</html>

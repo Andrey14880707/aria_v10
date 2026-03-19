@@ -1,0 +1,6 @@
+{
+  "name": "Battleship Game",
+  "type": "web_app",
+  "entrypoint": "index.html",
+  "files": ["index.html", "style.css", "app.js"]
+}

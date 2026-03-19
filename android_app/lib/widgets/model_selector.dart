@@ -91,19 +91,21 @@ class _ModelDrop extends StatelessWidget {
   const _ModelDrop({required this.settings});
 
   String _shortLabel(String model) {
-    // e.g. "claude-sonnet-4-20250514" → "sonnet-4"
+    if (model.isEmpty) return model;
     final parts = model.split('-');
-    if (parts.length >= 2) return '${parts[1]}-${parts[2]}';
+    if (parts.length >= 3) return '${parts[1]}-${parts[2]}';
+    if (parts.length == 2) return parts[1];
     return model;
   }
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final models = settings.availableModels;
+    if (models.isEmpty) return const SizedBox.shrink();
+    final value = models.contains(settings.model) ? settings.model : models.first;
     return DropdownButton<String>(
-      value: settings.availableModels.contains(settings.model)
-          ? settings.model
-          : settings.availableModels.first,
+      value: value,
       isDense: true,
       underline: const SizedBox(),
       borderRadius: BorderRadius.circular(10),
