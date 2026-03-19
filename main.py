@@ -45,6 +45,7 @@ except Exception:
 
 console = Console()
 PROJECT_DIR = Path(__file__).resolve().parent
+voice_mode: bool = False
 
 FACES = {
     "happy": "^_^",
@@ -144,6 +145,7 @@ def print_help() -> None:
         ("найди [текст]", "поиск по фактам"),
         ("заметки", "последние заметки"),
         ("фон", "вкл/выкл фон"),
+        ("голос", "вкл/выкл голосовой режим"),
         ("selfcheck", "проверка системы"),
         ("mutate", "цикл автоэволюции"),
         ("history", "история мутаций"),
@@ -210,6 +212,15 @@ def command_toggle_bg() -> None:
     else:
         bg.stop()
         console.print("[yellow]Фон выключен.[/yellow]")
+
+
+def command_toggle_voice() -> None:
+    global voice_mode
+    voice_mode = not voice_mode
+    status = "[green]ВКЛ[/green]" if voice_mode else "[yellow]ВЫКЛ[/yellow]"
+    console.print(f"Голосовой режим: {status}")
+    if voice_mode:
+        console.print("[dim]Ответы ARIA будут озвучены. Введи 'слушай' для голосового ввода.[/dim]")
 
 
 def command_selfcheck() -> None:
@@ -402,6 +413,25 @@ def main() -> None:
             command_toggle_bg()
             continue
 
+        elif low == "голос":
+            command_toggle_voice()
+            continue
+
+        elif low in {"слушай", "listen"} and voice_mode:
+            console.print("[dim]Говори...[/dim]")
+            try:
+                spoken = tools.execute("listen", {})
+                if spoken and spoken != "Голос не распознан.":
+                    console.print(f"[bold blue]ТЫ (голос) ▸[/bold blue] {spoken}")
+                    user = spoken
+                    low = user.lower()
+                else:
+                    console.print("[yellow]Не удалось распознать голос.[/yellow]")
+                    continue
+            except Exception as e:
+                console.print(f"[red]Ошибка голосового ввода: {e}[/red]")
+                continue
+
         elif low in {"помощь", "help"}:
             print_help()
             continue
@@ -436,6 +466,12 @@ def main() -> None:
                 console.print(f"\n[bold bright_green]ARIA ▸[/bold bright_green] [white]{answer}[/white]\n")
                 append_log(f"USER: {user[:200]}")
                 append_log(f"ARIA: {answer[:300]}")
+
+                if voice_mode:
+                    try:
+                        tools.execute("speak", {"text": answer[:500]})
+                    except Exception:
+                        pass
             except Exception as e:
                 append_log(f"ERROR: {e}")
                 if selfcheck:
