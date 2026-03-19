@@ -26,13 +26,6 @@ dependencies:
   # Date formatting
   intl: ^0.19.0
 
-  # Syntax highlighting in code blocks
-  flutter_highlight: ^0.7.0
-  highlight: ^0.7.0
-
-  # JSON viewer for tool results
-  json_theme: ^11.0.0
-
 dev_dependencies:
   flutter_test:
     sdk: flutter

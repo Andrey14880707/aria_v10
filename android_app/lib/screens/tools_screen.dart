@@ -1,3 +1,7 @@
+// lib/screens/tools_screen.dart
+// Two-tab screen:
+//   "Shell Tools"  — calls POST /execute (backend allowlisted tools)
+//   "Native"       — calls Android platform channel directly (no backend needed)
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -5,68 +9,61 @@ import 'package:provider/provider.dart';
 
 import '../models/settings_model.dart';
 import '../services/api_service.dart';
+import '../services/native_service.dart';
 
-// Pre-defined argument schemas for known tools
-const _toolSchemas = <String, List<_ArgDef>>{
-  'battery_status': [],
-  'system_info': [],
-  'list_packages': [],
-  'screenshot': [],
-  'get_screen_size': [],
-  'get_current_app': [],
-  'wifi_info': [],
-  'telephony_info': [],
-  'torch': [_ArgDef('on', 'bool', 'true')],
-  'location': [_ArgDef('provider', 'string', 'gps')],
-  'speak': [_ArgDef('text', 'string', '')],
-  'notification': [
-    _ArgDef('title', 'string', 'ARIA'),
-    _ArgDef('content', 'string', ''),
-  ],
-  'open_app': [_ArgDef('name', 'string', '')],
-  'open_url': [_ArgDef('url', 'string', 'https://')],
-  'open_settings': [_ArgDef('setting', 'string', '')],
-  'vibrate': [_ArgDef('duration_ms', 'int', '500')],
-  'volume': [
-    _ArgDef('stream', 'string', 'music'),
-    _ArgDef('direction', 'string', 'up'),
-  ],
-  'clipboard_get': [],
-  'clipboard_set': [_ArgDef('text', 'string', '')],
-  'input_text': [_ArgDef('text', 'string', '')],
-  'keyevent': [_ArgDef('key_code', 'int', '3')],
-  'tap': [
-    _ArgDef('x', 'int', '540'),
-    _ArgDef('y', 'int', '960'),
-  ],
-  'swipe': [
-    _ArgDef('x1', 'int', '200'),
-    _ArgDef('y1', 'int', '900'),
-    _ArgDef('x2', 'int', '200'),
-    _ArgDef('y2', 'int', '200'),
-    _ArgDef('duration_ms', 'int', '500'),
-  ],
-  'list_dir': [_ArgDef('path', 'string', '/sdcard')],
-  'read_file': [_ArgDef('path', 'string', '')],
-  'internet_search': [_ArgDef('query', 'string', '')],
-  'weather': [_ArgDef('city', 'string', '')],
-  'http_get': [_ArgDef('url', 'string', 'https://')],
-  'download_file': [
-    _ArgDef('url', 'string', ''),
-    _ArgDef('path', 'string', '/sdcard/Download/file'),
-  ],
-  'sleep': [_ArgDef('seconds', 'int', '1')],
-  'echo': [_ArgDef('text', 'string', '')],
-};
+// ─────────────────────────────────────────────────────────────────────────────
+// Shell tool schemas (argument definitions for the 8 /execute tools)
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _ArgDef {
   final String name;
-  final String type; // 'string' | 'int' | 'bool'
+  final String type; // 'string' | 'int' | 'bool' | 'list'
   final String defaultValue;
-  const _ArgDef(this.name, this.type, this.defaultValue);
+  final String hint;
+
+  const _ArgDef(this.name, this.type, this.defaultValue, [this.hint = '']);
 }
 
-// ── Screen ────────────────────────────────────────────────────────────────────
+const _shellSchemas = <String, List<_ArgDef>>{
+  'run_shell': [
+    _ArgDef('command', 'string', 'ls -la', 'e.g. ls -la /sdcard'),
+    _ArgDef('cwd', 'string', '', 'working directory (optional)'),
+    _ArgDef('timeout', 'int', '30', 'max seconds'),
+  ],
+  'read_file': [
+    _ArgDef('path', 'string', '', '/path/to/file'),
+    _ArgDef('max_lines', 'int', '200', 'max lines to return'),
+  ],
+  'write_file': [
+    _ArgDef('path', 'string', '', '/path/to/file'),
+    _ArgDef('content', 'string', '', 'file content'),
+    _ArgDef('append', 'bool', 'false', 'true = append, false = overwrite'),
+  ],
+  'list_dir': [
+    _ArgDef('path', 'string', '/sdcard', 'directory path'),
+  ],
+  'git_status': [
+    _ArgDef('repo_path', 'string', '.', 'path to git repo'),
+  ],
+  'git_add': [
+    _ArgDef('files', 'list', '', 'comma-separated file paths to stage'),
+    _ArgDef('repo_path', 'string', '.', 'path to git repo'),
+  ],
+  'git_commit': [
+    _ArgDef('message', 'string', '', 'commit message'),
+    _ArgDef('repo_path', 'string', '.', 'path to git repo'),
+  ],
+  'git_push': [
+    _ArgDef('remote', 'string', 'origin', 'git remote name'),
+    _ArgDef('branch', 'string', '', 'branch (leave empty for current)'),
+    _ArgDef('repo_path', 'string', '.', 'path to git repo'),
+    _ArgDef('timeout', 'int', '60', 'max seconds'),
+  ],
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Screen
+// ─────────────────────────────────────────────────────────────────────────────
 
 class ToolsScreen extends StatefulWidget {
   const ToolsScreen({super.key});
@@ -75,49 +72,79 @@ class ToolsScreen extends StatefulWidget {
   State<ToolsScreen> createState() => _ToolsScreenState();
 }
 
-class _ToolsScreenState extends State<ToolsScreen> {
-  List<String> _tools = [];
-  bool _loading = false;
-  String? _selected;
-  String _result = '';
-  bool _executing = false;
-  String _filter = '';
-
-  // controllers per arg field
-  final Map<String, TextEditingController> _argCtrls = {};
+class _ToolsScreenState extends State<ToolsScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabs;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadTools());
+    _tabs = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabs.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      children: [
+        TabBar(
+          controller: _tabs,
+          tabs: const [
+            Tab(icon: Icon(Icons.terminal, size: 18), text: 'Shell / Git'),
+            Tab(icon: Icon(Icons.phone_android, size: 18), text: 'Native'),
+          ],
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: _tabs,
+            children: const [
+              _ShellToolsPanel(),
+              _NativeActionsPanel(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tab 1: Shell / Git tools  →  POST /execute
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _ShellToolsPanel extends StatefulWidget {
+  const _ShellToolsPanel();
+
+  @override
+  State<_ShellToolsPanel> createState() => _ShellToolsPanelState();
+}
+
+class _ShellToolsPanelState extends State<_ShellToolsPanel> {
+  String? _selected;
+  String _result = '';
+  bool _executing = false;
+  final Map<String, TextEditingController> _ctrls = {};
+
+  @override
+  void dispose() {
+    for (final c in _ctrls.values) c.dispose();
+    super.dispose();
   }
 
   ApiService get _api =>
       ApiService(baseUrl: context.read<SettingsModel>().backendUrl);
 
-  Future<void> _loadTools() async {
-    setState(() => _loading = true);
-    try {
-      final tools = await _api.getTools();
-      if (mounted) setState(() => _tools = tools..sort());
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
   void _selectTool(String name) {
-    // Rebuild arg controllers
-    for (final c in _argCtrls.values) c.dispose();
-    _argCtrls.clear();
-    final schema = _toolSchemas[name] ?? [];
-    for (final def in schema) {
-      _argCtrls[def.name] = TextEditingController(text: def.defaultValue);
+    for (final c in _ctrls.values) c.dispose();
+    _ctrls.clear();
+    for (final def in _shellSchemas[name] ?? []) {
+      _ctrls[def.name] = TextEditingController(text: def.defaultValue);
     }
     setState(() {
       _selected = name;
@@ -132,31 +159,28 @@ class _ToolsScreenState extends State<ToolsScreen> {
       _result = '';
     });
 
-    try {
-      Map<String, dynamic> args = {};
-      final schema = _toolSchemas[_selected!] ?? [];
-      for (final def in schema) {
-        final raw = _argCtrls[def.name]?.text.trim() ?? '';
-        if (raw.isEmpty) continue;
-        if (def.type == 'int') {
+    final Map<String, dynamic> args = {};
+    for (final def in _shellSchemas[_selected!] ?? []) {
+      final raw = _ctrls[def.name]?.text.trim() ?? '';
+      if (raw.isEmpty) continue;
+      switch (def.type) {
+        case 'int':
           args[def.name] = int.tryParse(raw) ?? raw;
-        } else if (def.type == 'bool') {
+          break;
+        case 'bool':
           args[def.name] = raw.toLowerCase() == 'true';
-        } else {
+          break;
+        case 'list':
+          // comma-separated → List<String>
+          args[def.name] = raw.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+          break;
+        default:
           args[def.name] = raw;
-        }
       }
+    }
 
-      // For unknown tools use raw JSON
-      if (!_toolSchemas.containsKey(_selected!) &&
-          _argCtrls.containsKey('__json__')) {
-        try {
-          final j = jsonDecode(_argCtrls['__json__']!.text.trim());
-          if (j is Map<String, dynamic>) args = j;
-        } catch (_) {}
-      }
-
-      final result = await _api.executeTool(_selected!, args);
+    try {
+      final result = await _api.executeShellTool(_selected!, args);
       if (mounted) setState(() => _result = result);
     } catch (e) {
       if (mounted) setState(() => _result = 'ERROR: $e');
@@ -165,44 +189,31 @@ class _ToolsScreenState extends State<ToolsScreen> {
     }
   }
 
-  List<String> get _filteredTools {
-    if (_filter.isEmpty) return _tools;
-    return _tools
-        .where((t) => t.contains(_filter.toLowerCase()))
-        .toList();
-  }
-
-  // ── Build ─────────────────────────────────────────────────────────────────
-
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        // Left panel: tool list
+        // Left: tool list
         SizedBox(
-          width: 190,
+          width: 160,
           child: _ToolList(
-            tools: _filteredTools,
+            tools: _shellSchemas.keys.toList(),
             selected: _selected,
-            loading: _loading,
-            filter: _filter,
-            onFilter: (f) => setState(() => _filter = f),
             onSelect: _selectTool,
-            onRefresh: _loadTools,
           ),
         ),
         VerticalDivider(
           width: 1,
           color: Theme.of(context).colorScheme.outlineVariant,
         ),
-        // Right panel: args + result
+        // Right: args + execute + result
         Expanded(
           child: _selected == null
-              ? _SelectPrompt()
+              ? _SelectHint()
               : _ToolDetail(
                   toolName: _selected!,
-                  schema: _toolSchemas[_selected!] ?? [],
-                  argCtrls: _argCtrls,
+                  defs: _shellSchemas[_selected!] ?? [],
+                  ctrls: _ctrls,
                   result: _result,
                   executing: _executing,
                   onExecute: _execute,
@@ -211,141 +222,331 @@ class _ToolsScreenState extends State<ToolsScreen> {
       ],
     );
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tab 2: Native Android actions  →  platform channel
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _NativeActionsPanel extends StatefulWidget {
+  const _NativeActionsPanel();
+
+  @override
+  State<_NativeActionsPanel> createState() => _NativeActionsPanelState();
+}
+
+class _NativeActionsPanelState extends State<_NativeActionsPanel> {
+  bool _torchOn = false;
+  bool _hasFlash = false;
+  String _log = '';
+  final _vibrateCtrl = TextEditingController(text: '300');
+
+  @override
+  void initState() {
+    super.initState();
+    _checkFlash();
+  }
 
   @override
   void dispose() {
-    for (final c in _argCtrls.values) c.dispose();
+    _vibrateCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _checkFlash() async {
+    final has = await NativeService.hasFlashlight();
+    if (mounted) setState(() => _hasFlash = has);
+  }
+
+  void _appendLog(String msg) {
+    if (!mounted) return;
+    setState(() => _log = '[${_ts()}] $msg\n$_log');
+  }
+
+  String _ts() {
+    final n = DateTime.now();
+    return '${n.hour.toString().padLeft(2, '0')}:${n.minute.toString().padLeft(2, '0')}:${n.second.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _toggleTorch() async {
+    try {
+      if (_torchOn) {
+        await NativeService.flashlightOff();
+        setState(() => _torchOn = false);
+        _appendLog('Flashlight OFF');
+      } else {
+        await NativeService.flashlightOn();
+        setState(() => _torchOn = true);
+        _appendLog('Flashlight ON');
+      }
+    } on NativeServiceException catch (e) {
+      _appendLog('Flashlight error: ${e.code} — ${e.message}');
+    } catch (e) {
+      _appendLog('Flashlight error: $e');
+    }
+  }
+
+  Future<void> _vibrate() async {
+    final ms = int.tryParse(_vibrateCtrl.text.trim()) ?? 300;
+    try {
+      await NativeService.vibrate(durationMs: ms);
+      _appendLog('Vibrated ${ms}ms');
+    } on NativeServiceException catch (e) {
+      _appendLog('Vibrate error: ${e.code} — ${e.message}');
+    } catch (e) {
+      _appendLog('Vibrate error: $e');
+    }
+  }
+
+  Future<void> _openSettings() async {
+    try {
+      await NativeService.openAppSettings();
+      _appendLog('Opened App Settings');
+    } on NativeServiceException catch (e) {
+      _appendLog('Settings error: ${e.code} — ${e.message}');
+    } catch (e) {
+      _appendLog('Settings error: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionLabel('Android Native Actions'),
+          const SizedBox(height: 4),
+          Text(
+            'These call directly into Android via platform channels.\nNo backend required.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: scheme.outline,
+                ),
+          ),
+          const SizedBox(height: 20),
+
+          // ── Flashlight ──────────────────────────────────────────────────
+          _SectionLabel('Flashlight'),
+          const SizedBox(height: 8),
+          if (!_hasFlash)
+            _InfoChip(
+              Icons.no_photography,
+              'No flash hardware detected',
+              scheme.errorContainer,
+              scheme.onErrorContainer,
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: _toggleTorch,
+                    icon: Icon(
+                      _torchOn ? Icons.flashlight_off : Icons.flashlight_on,
+                    ),
+                    label: Text(_torchOn ? 'Turn OFF' : 'Turn ON'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor:
+                          _torchOn ? scheme.error : scheme.primary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _torchOn ? Colors.yellow : scheme.outlineVariant,
+                    boxShadow: _torchOn
+                        ? [
+                            BoxShadow(
+                              color: Colors.yellow.withOpacity(0.8),
+                              blurRadius: 10,
+                              spreadRadius: 2,
+                            )
+                          ]
+                        : null,
+                  ),
+                ),
+              ],
+            ),
+
+          const SizedBox(height: 24),
+
+          // ── Vibration ───────────────────────────────────────────────────
+          _SectionLabel('Vibration'),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              SizedBox(
+                width: 100,
+                child: TextField(
+                  controller: _vibrateCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'ms',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: _vibrate,
+                  icon: const Icon(Icons.vibration),
+                  label: const Text('Vibrate'),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+
+          // ── App Settings ────────────────────────────────────────────────
+          _SectionLabel('System'),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _openSettings,
+              icon: const Icon(Icons.settings_outlined),
+              label: const Text('Open App Settings'),
+            ),
+          ),
+
+          const SizedBox(height: 28),
+
+          // ── Action log ──────────────────────────────────────────────────
+          Row(
+            children: [
+              _SectionLabel('Action Log'),
+              const Spacer(),
+              if (_log.isNotEmpty)
+                TextButton.icon(
+                  onPressed: () => setState(() => _log = ''),
+                  icon: const Icon(Icons.delete_outline, size: 14),
+                  label: const Text('Clear', style: TextStyle(fontSize: 12)),
+                  style: TextButton.styleFrom(
+                    foregroundColor: scheme.outline,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Container(
+            width: double.infinity,
+            constraints: const BoxConstraints(minHeight: 60, maxHeight: 220),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                  color: scheme.outlineVariant, width: 0.5),
+            ),
+            child: _log.isEmpty
+                ? Text(
+                    'No actions yet.',
+                    style: TextStyle(
+                        color: scheme.outline, fontStyle: FontStyle.italic),
+                  )
+                : SelectableText(
+                    _log,
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 11,
+                      height: 1.5,
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
-// ── Left panel ────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared sub-widgets
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _ToolList extends StatelessWidget {
   final List<String> tools;
   final String? selected;
-  final bool loading;
-  final String filter;
-  final void Function(String) onFilter;
   final void Function(String) onSelect;
-  final VoidCallback onRefresh;
 
   const _ToolList({
     required this.tools,
     required this.selected,
-    required this.loading,
-    required this.filter,
-    required this.onFilter,
     required this.onSelect,
-    required this.onRefresh,
   });
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.all(8),
-          child: TextField(
-            decoration: InputDecoration(
-              hintText: 'Filter…',
-              prefixIcon: const Icon(Icons.search, size: 16),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(20),
-                borderSide: BorderSide.none,
-              ),
-              filled: true,
-              fillColor: scheme.surfaceContainerHighest,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              isDense: true,
-              suffixIcon: filter.isNotEmpty
-                  ? GestureDetector(
-                      onTap: () => onFilter(''),
-                      child: const Icon(Icons.clear, size: 14),
-                    )
-                  : null,
-            ),
-            onChanged: onFilter,
-            style: const TextStyle(fontSize: 13),
+          padding: const EdgeInsets.fromLTRB(10, 10, 10, 4),
+          child: Text(
+            '${tools.length} tools',
+            style: Theme.of(context)
+                .textTheme
+                .labelSmall
+                ?.copyWith(color: scheme.outline),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Row(
-            children: [
-              Text(
-                '${tools.length} tools',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: scheme.outline,
-                    ),
-              ),
-              const Spacer(),
-              InkWell(
-                onTap: onRefresh,
-                borderRadius: BorderRadius.circular(4),
-                child: Padding(
-                  padding: const EdgeInsets.all(4),
-                  child: Icon(Icons.refresh, size: 14, color: scheme.outline),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 4),
         Expanded(
-          child: loading
-              ? const Center(child: CircularProgressIndicator())
-              : ListView.builder(
-                  itemCount: tools.length,
-                  itemBuilder: (ctx, i) {
-                    final t = tools[i];
-                    final active = t == selected;
-                    return ListTile(
-                      dense: true,
-                      selected: active,
-                      selectedTileColor: scheme.primaryContainer,
-                      title: Text(
-                        t,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontFamily: 'monospace',
-                          color: active
-                              ? scheme.onPrimaryContainer
-                              : scheme.onSurface,
-                        ),
-                      ),
-                      onTap: () => onSelect(t),
-                    );
-                  },
+          child: ListView.builder(
+            itemCount: tools.length,
+            itemBuilder: (_, i) {
+              final t = tools[i];
+              final active = t == selected;
+              return ListTile(
+                dense: true,
+                selected: active,
+                selectedTileColor: scheme.primaryContainer,
+                title: Text(
+                  t,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'monospace',
+                    fontWeight:
+                        active ? FontWeight.bold : FontWeight.normal,
+                    color: active
+                        ? scheme.onPrimaryContainer
+                        : scheme.onSurface,
+                  ),
                 ),
+                onTap: () => onSelect(t),
+              );
+            },
+          ),
         ),
       ],
     );
   }
 }
 
-// ── Right panel ───────────────────────────────────────────────────────────────
-
-class _SelectPrompt extends StatelessWidget {
+class _SelectHint extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.touch_app_outlined,
-            size: 48,
-            color: Theme.of(context).colorScheme.outline,
-          ),
+          Icon(Icons.touch_app_outlined,
+              size: 40, color: Theme.of(context).colorScheme.outline),
           const SizedBox(height: 12),
           Text(
             'Select a tool',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.outline,
-                ),
+            style: TextStyle(color: Theme.of(context).colorScheme.outline),
           ),
         ],
       ),
@@ -355,16 +556,16 @@ class _SelectPrompt extends StatelessWidget {
 
 class _ToolDetail extends StatelessWidget {
   final String toolName;
-  final List<_ArgDef> schema;
-  final Map<String, TextEditingController> argCtrls;
+  final List<_ArgDef> defs;
+  final Map<String, TextEditingController> ctrls;
   final String result;
   final bool executing;
   final VoidCallback onExecute;
 
   const _ToolDetail({
     required this.toolName,
-    required this.schema,
-    required this.argCtrls,
+    required this.defs,
+    required this.ctrls,
     required this.result,
     required this.executing,
     required this.onExecute,
@@ -373,20 +574,20 @@ class _ToolDetail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final isError = result.startsWith('ERROR:');
+    final isError = result.startsWith('ERROR:') || result.startsWith('⚠');
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Tool name
+          // Tool name badge
           Container(
             padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
               color: scheme.primaryContainer,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
               toolName,
@@ -397,32 +598,15 @@ class _ToolDetail extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
           // Arg fields
-          if (schema.isEmpty)
-            Text(
-              'No arguments required.',
-              style: TextStyle(
-                  color: scheme.outline, fontStyle: FontStyle.italic),
-            )
-          else ...[
-            Text(
-              'Arguments',
-              style: Theme.of(context)
-                  .textTheme
-                  .labelMedium
-                  ?.copyWith(color: scheme.outline),
-            ),
-            const SizedBox(height: 8),
-            ...schema.map((def) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _ArgField(def: def, ctrl: argCtrls[def.name]!),
-                )),
-          ],
+          ...defs.map((def) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _ArgField(def: def, ctrl: ctrls[def.name]!),
+              )),
 
-          // Execute button
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
@@ -431,8 +615,7 @@ class _ToolDetail extends StatelessWidget {
                   ? const SizedBox(
                       width: 16,
                       height: 16,
-                      child:
-                          CircularProgressIndicator(strokeWidth: 2.5),
+                      child: CircularProgressIndicator(strokeWidth: 2.5),
                     )
                   : const Icon(Icons.play_arrow),
               label: Text(executing ? 'Running…' : 'Execute'),
@@ -441,7 +624,7 @@ class _ToolDetail extends StatelessWidget {
 
           // Result
           if (result.isNotEmpty) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             Row(
               children: [
                 Text(
@@ -457,30 +640,30 @@ class _ToolDetail extends StatelessWidget {
                     Clipboard.setData(ClipboardData(text: result));
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                          content: Text('Copied'),
-                          duration: Duration(seconds: 1)),
+                        content: Text('Copied'),
+                        duration: Duration(seconds: 1),
+                        behavior: SnackBarBehavior.floating,
+                      ),
                     );
                   },
                   icon: const Icon(Icons.copy, size: 14),
                   label: const Text('Copy', style: TextStyle(fontSize: 12)),
                   style: TextButton.styleFrom(
                     foregroundColor: scheme.outline,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: isError
-                    ? scheme.errorContainer.withOpacity(0.6)
+                    ? scheme.errorContainer.withOpacity(0.5)
                     : scheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: isError
                       ? scheme.error.withOpacity(0.4)
@@ -493,8 +676,8 @@ class _ToolDetail extends StatelessWidget {
                 style: TextStyle(
                   fontFamily: 'monospace',
                   fontSize: 12,
-                  color: isError ? scheme.error : scheme.onSurface,
                   height: 1.5,
+                  color: isError ? scheme.error : scheme.onSurface,
                 ),
               ),
             ),
@@ -514,14 +697,61 @@ class _ArgField extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextField(
       controller: ctrl,
-      decoration: InputDecoration(
-        labelText: '${def.name} (${def.type})',
-        border: const OutlineInputBorder(),
-      ),
+      maxLines: def.type == 'string' && def.name == 'content' ? 5 : 1,
       keyboardType: def.type == 'int'
           ? TextInputType.number
           : TextInputType.text,
       style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+      decoration: InputDecoration(
+        labelText: '${def.name}  (${def.type})',
+        hintText: def.hint.isNotEmpty ? def.hint : null,
+        border: const OutlineInputBorder(),
+        isDense: true,
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  const _SectionLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text.toUpperCase(),
+      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: Theme.of(context).colorScheme.primary,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.2,
+          ),
+    );
+  }
+}
+
+class _InfoChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color bg;
+  final Color fg;
+  const _InfoChip(this.icon, this.label, this.bg, this.fg);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: fg),
+          const SizedBox(width: 8),
+          Text(label, style: TextStyle(color: fg, fontSize: 13)),
+        ],
+      ),
     );
   }
 }
