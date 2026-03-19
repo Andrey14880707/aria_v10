@@ -631,7 +631,7 @@ def get_settings():
 
 @app.post("/settings")
 def update_settings(req: SettingsRequest):
-    updates = req.model_dump(exclude_none=True)
+    updates = req.model_dump(exclude_none=True) if hasattr(req, "model_dump") else req.dict(exclude_none=True)
     for key_field in ("anthropic_api_key", "openai_api_key", "gemini_api_key"):
         if key_field in updates:
             CONFIG[key_field] = updates.pop(key_field)
