@@ -39,10 +39,20 @@ class _SpacesScreenState extends State<SpacesScreen> {
     try {
       final list = await _api.listSpaces();
       if (mounted) setState(() => _spaces = list);
+    } on ApiException catch (e) {
+      if (mounted) {
+        // 404 → backend has old code without spaces routes
+        final hint = e.statusCode == 404
+            ? 'Backend outdated — restart server with new code (git pull + bash start_api.sh)'
+            : '$e';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(hint), duration: const Duration(seconds: 6)),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+            .showSnackBar(SnackBar(content: Text('$e')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);

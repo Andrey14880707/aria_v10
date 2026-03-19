@@ -18,9 +18,18 @@ from state import AgentState
 from tools import ToolRunner
 from tools_shell import SHELL_TOOLS, execute_shell_tool
 from utils import append_log
-import spaces_manager as _sm
-import file_engine as _fe
-from patch_engine import PATCH_SYSTEM, build_patch_prompt, apply_patch_response
+try:
+    import spaces_manager as _sm
+    import file_engine as _fe
+    from patch_engine import PATCH_SYSTEM, build_patch_prompt, apply_patch_response
+    _SPACES_OK = True
+except Exception as _spaces_import_err:
+    _sm = None  # type: ignore
+    _fe = None  # type: ignore
+    _SPACES_OK = False
+    _spaces_import_err_msg = str(_spaces_import_err)
+    import traceback as _tb
+    print(f"[ARIA] spaces modules failed to load: {_spaces_import_err}\n{_tb.format_exc()}")
 
 # ── LLM providers ─────────────────────────────────────────────────────────────
 
@@ -366,9 +375,22 @@ def build_apk(req: BuildApkRequest):
 
 # ── Open Space ────────────────────────────────────────────────────────────────
 
+def _require_spaces():
+    if not _SPACES_OK:
+        raise HTTPException(503, f"Spaces module failed to load: {_spaces_import_err_msg}")
+
+
+@app.get("/spaces/status")
+def spaces_status():
+    """Diagnostic endpoint — always returns, even if spaces modules are broken."""
+    if _SPACES_OK:
+        return {"ok": True, "spaces_root": str(_sm.SPACES_ROOT)}
+    return {"ok": False, "error": _spaces_import_err_msg}
+
 
 @app.post("/spaces/create")
 def spaces_create(req: SpaceCreateRequest):
+    _require_spaces()
     try:
         manifest = _sm.create_space(prompt=req.prompt, name=req.name)
         append_log(f"[spaces] created {manifest['id']} type={manifest['type']} template={manifest['template']}")
@@ -380,11 +402,13 @@ def spaces_create(req: SpaceCreateRequest):
 
 @app.get("/spaces")
 def spaces_list():
+    _require_spaces()
     return _sm.list_spaces()
 
 
 @app.get("/spaces/{space_id}")
 def spaces_get(space_id: str):
+    _require_spaces()
     try:
         return _sm.get_space(space_id)
     except FileNotFoundError:
@@ -393,6 +417,7 @@ def spaces_get(space_id: str):
 
 @app.delete("/spaces/{space_id}")
 def spaces_delete(space_id: str):
+    _require_spaces()
     try:
         _sm.delete_space(space_id)
         return {"status": "deleted", "id": space_id}
@@ -402,6 +427,7 @@ def spaces_delete(space_id: str):
 
 @app.post("/spaces/{space_id}/duplicate")
 def spaces_duplicate(space_id: str, req: SpaceDuplicateRequest):
+    _require_spaces()
     try:
         manifest = _sm.duplicate_space(space_id, new_name=req.name)
         return manifest
@@ -412,6 +438,7 @@ def spaces_duplicate(space_id: str, req: SpaceDuplicateRequest):
 @app.post("/spaces/{space_id}/patch")
 def spaces_patch(space_id: str, req: SpacePatchRequest):
     """Apply LLM-generated patch to Space files based on user prompt."""
+    _require_spaces()
     try:
         manifest = _sm.get_space(space_id)
     except FileNotFoundError:
@@ -459,6 +486,7 @@ def spaces_patch(space_id: str, req: SpacePatchRequest):
 
 @app.get("/spaces/{space_id}/files")
 def spaces_list_files(space_id: str):
+    _require_spaces()
     try:
         _sm.get_space(space_id)  # existence check
     except FileNotFoundError:
@@ -469,6 +497,7 @@ def spaces_list_files(space_id: str):
 
 @app.get("/spaces/{space_id}/files/content")
 def spaces_read_file(space_id: str, path: str):
+    _require_spaces()
     try:
         _sm.get_space(space_id)
     except FileNotFoundError:
@@ -485,6 +514,7 @@ def spaces_read_file(space_id: str, path: str):
 
 @app.post("/spaces/{space_id}/files")
 def spaces_write_file(space_id: str, req: SpaceFileWriteRequest):
+    _require_spaces()
     try:
         _sm.get_space(space_id)
     except FileNotFoundError:

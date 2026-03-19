@@ -552,6 +552,10 @@ class ApiService {
     return SpaceManifest.fromJson(d);
   }
 
+  Future<Map<String, dynamic>> spacesStatus() async {
+    return _m(await _get('/spaces/status'));
+  }
+
   Future<List<SpaceSummary>> listSpaces() async {
     final d = await _get('/spaces');
     return _l(d).map(SpaceSummary.fromJson).toList();
