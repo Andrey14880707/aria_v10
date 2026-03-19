@@ -7,6 +7,7 @@ import 'chat_screen.dart';
 import 'tools_screen.dart';
 import 'logs_screen.dart';
 import 'settings_screen.dart';
+import 'spaces_screen.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -38,6 +39,11 @@ class _MainShellState extends State<MainShell> {
       icon: Icon(Icons.chat_bubble_outline),
       selectedIcon: Icon(Icons.chat_bubble),
       label: 'Chat',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.space_dashboard_outlined),
+      selectedIcon: Icon(Icons.space_dashboard),
+      label: 'Spaces',
     ),
     NavigationDestination(
       icon: Icon(Icons.build_outlined),
@@ -103,6 +109,7 @@ class _MainShellState extends State<MainShell> {
         index: _index,
         children: const [
           ChatScreen(),
+          SpacesScreen(),
           ToolsScreen(),
           LogsScreen(),
           SettingsScreen(),

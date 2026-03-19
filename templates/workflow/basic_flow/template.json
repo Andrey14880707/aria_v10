@@ -1,0 +1,1 @@
+{"name": "Basic Workflow", "type": "workflow", "entrypoint": "flow.json", "files": ["flow.json"]}

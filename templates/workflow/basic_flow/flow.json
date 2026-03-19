@@ -1,0 +1,8 @@
+{
+  "name": "My Workflow",
+  "steps": [
+    {"id": "step1", "name": "Start", "action": "log", "params": {"message": "Workflow started"}},
+    {"id": "step2", "name": "Process", "action": "log", "params": {"message": "Processing..."}},
+    {"id": "step3", "name": "End", "action": "log", "params": {"message": "Done!"}}
+  ]
+}

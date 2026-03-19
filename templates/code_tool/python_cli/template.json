@@ -1,0 +1,1 @@
+{"name": "Python CLI Tool", "type": "code_tool", "entrypoint": "main.py", "files": ["main.py", "requirements.txt"]}

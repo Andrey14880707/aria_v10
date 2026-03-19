@@ -1,0 +1,15 @@
+{
+  "web_app": [
+    "game_battleship",
+    "calculator_basic",
+    "dashboard_basic",
+    "landing_page"
+  ],
+  "code_tool": [
+    "python_cli",
+    "fastapi_basic"
+  ],
+  "workflow": [
+    "basic_flow"
+  ]
+}

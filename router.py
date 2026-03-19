@@ -18,6 +18,9 @@ from state import AgentState
 from tools import ToolRunner
 from tools_shell import SHELL_TOOLS, execute_shell_tool
 from utils import append_log
+import spaces_manager as _sm
+import file_engine as _fe
+from patch_engine import PATCH_SYSTEM, build_patch_prompt, apply_patch_response
 
 # ── LLM providers ─────────────────────────────────────────────────────────────
 
@@ -127,6 +130,22 @@ class SettingsRequest(BaseModel):
 class ToolExecRequest(BaseModel):
     tool: str
     args: Dict[str, Any] = {}
+
+
+# ── Space models ─────────────────────────────────────────────────────────────
+
+class SpaceCreateRequest(BaseModel):
+    prompt: str
+    name: Optional[str] = None
+
+
+class SpacePatchRequest(BaseModel):
+    prompt: str
+
+
+class SpaceFileWriteRequest(BaseModel):
+    path: str
+    content: str
 
 
 class FactResponse(BaseModel):
@@ -339,6 +358,147 @@ def build_apk(req: BuildApkRequest):
             else f"Push failed: {push_out}"
         ),
     )
+
+
+# ── Open Space ────────────────────────────────────────────────────────────────
+
+
+@app.post("/spaces/create")
+def spaces_create(req: SpaceCreateRequest):
+    try:
+        manifest = _sm.create_space(prompt=req.prompt, name=req.name)
+        append_log(f"[spaces] created {manifest['id']} type={manifest['type']} template={manifest['template']}")
+        return manifest
+    except Exception as e:
+        append_log(f"[spaces] create error: {e}")
+        raise HTTPException(500, str(e))
+
+
+@app.get("/spaces")
+def spaces_list():
+    return _sm.list_spaces()
+
+
+@app.get("/spaces/{space_id}")
+def spaces_get(space_id: str):
+    try:
+        return _sm.get_space(space_id)
+    except FileNotFoundError:
+        raise HTTPException(404, f"Space not found: {space_id}")
+
+
+@app.delete("/spaces/{space_id}")
+def spaces_delete(space_id: str):
+    try:
+        _sm.delete_space(space_id)
+        return {"status": "deleted", "id": space_id}
+    except FileNotFoundError:
+        raise HTTPException(404, f"Space not found: {space_id}")
+
+
+@app.post("/spaces/{space_id}/duplicate")
+def spaces_duplicate(space_id: str, body: dict = {}):
+    try:
+        new_name = body.get("name") if body else None
+        manifest = _sm.duplicate_space(space_id, new_name=new_name)
+        return manifest
+    except FileNotFoundError:
+        raise HTTPException(404, f"Space not found: {space_id}")
+
+
+@app.post("/spaces/{space_id}/patch")
+def spaces_patch(space_id: str, req: SpacePatchRequest):
+    """Apply LLM-generated patch to Space files based on user prompt."""
+    try:
+        manifest = _sm.get_space(space_id)
+    except FileNotFoundError:
+        raise HTTPException(404, f"Space not found: {space_id}")
+
+    space_dir = _sm._space_dir(space_id)
+    prompt_text = build_patch_prompt(space_dir, req.prompt)
+
+    # Call LLM for patch
+    try:
+        ag, _, _ = _get_agent(
+            CONFIG.get("active_provider", "anthropic"),
+            CONFIG.get("active_model", MODEL),
+        )
+        # Build messages for raw LLM call (bypass agent tool loop)
+        llm = _build_llm(
+            CONFIG.get("active_provider", "anthropic"),
+            CONFIG.get("active_model", MODEL),
+        )
+        response = llm.chat(
+            messages=[{"role": "user", "content": prompt_text}],
+            system=PATCH_SYSTEM,
+            max_tokens=4096,
+        )
+    except Exception as e:
+        raise HTTPException(500, f"LLM error: {e}")
+
+    try:
+        # Save snapshot before patching
+        current_files: dict = {}
+        for fi in _fe.list_files(space_dir):
+            try:
+                current_files[fi["path"]] = _fe.read_file(space_dir, fi["path"])
+            except Exception:
+                pass
+        _sm.bump_version(space_id, snapshot={"files": current_files, "prompt": req.prompt})
+
+        modified = apply_patch_response(space_dir, response, manifest.get("version", 1))
+        _sm.update_space(space_id, {"status": "ready"})
+        append_log(f"[spaces] patched {space_id} files={modified}")
+        return {"status": "ok", "modified": modified, "space_id": space_id}
+    except Exception as e:
+        raise HTTPException(500, f"Patch error: {e}")
+
+
+@app.get("/spaces/{space_id}/files")
+def spaces_list_files(space_id: str):
+    try:
+        _sm.get_space(space_id)  # existence check
+    except FileNotFoundError:
+        raise HTTPException(404, f"Space not found: {space_id}")
+    space_dir = _sm._space_dir(space_id)
+    return _fe.list_files(space_dir)
+
+
+@app.get("/spaces/{space_id}/files/content")
+def spaces_read_file(space_id: str, path: str):
+    try:
+        _sm.get_space(space_id)
+    except FileNotFoundError:
+        raise HTTPException(404, f"Space not found: {space_id}")
+    space_dir = _sm._space_dir(space_id)
+    try:
+        content = _fe.read_file(space_dir, path)
+        return {"path": path, "content": content}
+    except FileNotFoundError:
+        raise HTTPException(404, f"File not found: {path}")
+    except PermissionError as e:
+        raise HTTPException(403, str(e))
+
+
+@app.post("/spaces/{space_id}/files")
+def spaces_write_file(space_id: str, req: SpaceFileWriteRequest):
+    try:
+        _sm.get_space(space_id)
+    except FileNotFoundError:
+        raise HTTPException(404, f"Space not found: {space_id}")
+    space_dir = _sm._space_dir(space_id)
+    try:
+        _fe.write_file(space_dir, req.path, req.content)
+        _sm.update_space(space_id, {})  # bump updated_at
+        return {"status": "ok", "path": req.path}
+    except PermissionError as e:
+        raise HTTPException(403, str(e))
+
+
+@app.get("/spaces/{space_id}/templates")
+def spaces_templates(_space_id: str):
+    from template_resolver import get_registry
+    return get_registry()
 
 
 # ── Memory ────────────────────────────────────────────────────────────────────

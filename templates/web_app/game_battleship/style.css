@@ -1,0 +1,59 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #0a1628;
+  color: #e0e8ff;
+  font-family: 'Segoe UI', sans-serif;
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 16px;
+}
+#app { max-width: 480px; width: 100%; }
+h1 { text-align: center; color: #7eb8f7; font-size: 1.6rem; margin-bottom: 8px; }
+#status {
+  text-align: center;
+  font-size: 0.85rem;
+  color: #90b4e0;
+  margin-bottom: 12px;
+  min-height: 20px;
+}
+#boards { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.board-wrap { text-align: center; }
+.board-wrap h3 { font-size: 0.8rem; color: #5a9fd4; margin-bottom: 6px; }
+.board {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 2px;
+  width: min(48vw, 200px);
+  height: min(48vw, 200px);
+}
+.cell {
+  background: #102040;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.cell.ship  { background: #2a5080; }
+.cell.hit   { background: #c0392b; cursor: default; }
+.cell.miss  { background: #1a3a5a; cursor: default; }
+.cell.miss::after { content: '·'; color: #4a7aaa; display: flex; align-items: center; justify-content: center; height: 100%; font-size: 1.2em; }
+.cell.sunk  { background: #7f0000; }
+.cell:hover:not(.hit):not(.miss):not(.sunk) { background: #1e4070; }
+#controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 14px;
+}
+#btn-new {
+  background: #1a5fa8;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 20px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+#btn-new:hover { background: #2270c0; }
+#score { font-size: 0.85rem; color: #7eb8f7; }

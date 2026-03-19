@@ -199,6 +199,95 @@ class ProviderInfo {
   }
 }
 
+class SpaceManifest {
+  final String id;
+  final String name;
+  final String description;
+  final String type;
+  final String template;
+  final int version;
+  final String entrypoint;
+  final String status;
+  final String createdAt;
+  final String updatedAt;
+  final Map<String, bool> features;
+
+  const SpaceManifest({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.type,
+    required this.template,
+    required this.version,
+    required this.entrypoint,
+    required this.status,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.features,
+  });
+
+  factory SpaceManifest.fromJson(dynamic raw) {
+    final j = _m(raw);
+    final featRaw = j['features'];
+    final feat = <String, bool>{};
+    if (featRaw is Map) {
+      featRaw.forEach((k, v) => feat[k.toString()] = _b(v));
+    }
+    return SpaceManifest(
+      id: _s(j['id']),
+      name: _s(j['name']),
+      description: _s(j['description']),
+      type: _s(j['type']),
+      template: _s(j['template']),
+      version: _i(j['version'], 1),
+      entrypoint: _s(j['entrypoint'], 'index.html'),
+      status: _s(j['status']),
+      createdAt: _s(j['created_at']),
+      updatedAt: _s(j['updated_at']),
+      features: feat,
+    );
+  }
+
+  bool get previewable => features['preview'] == true;
+}
+
+class SpaceSummary {
+  final String id;
+  final String name;
+  final String type;
+  final String status;
+  final String updatedAt;
+
+  const SpaceSummary({
+    required this.id,
+    required this.name,
+    required this.type,
+    required this.status,
+    required this.updatedAt,
+  });
+
+  factory SpaceSummary.fromJson(dynamic raw) {
+    final j = _m(raw);
+    return SpaceSummary(
+      id: _s(j['id']),
+      name: _s(j['name']),
+      type: _s(j['type']),
+      status: _s(j['status']),
+      updatedAt: _s(j['updated_at']),
+    );
+  }
+}
+
+class SpaceFile {
+  final String path;
+  final int size;
+  const SpaceFile({required this.path, required this.size});
+  factory SpaceFile.fromJson(dynamic raw) {
+    final j = _m(raw);
+    return SpaceFile(path: _s(j['path']), size: _i(j['size']));
+  }
+}
+
 /// Log line — tolerates both `{"line":"..."}` and raw strings or rich objects.
 class LogLine {
   final String text;
@@ -449,4 +538,55 @@ class ApiService {
   Future<void> deleteFact(int id) => _delete('/memory/facts/$id');
 
   Future<void> clearMemory() => _delete('/memory/clear');
+
+  // ── Open Space ──────────────────────────────────────────────────────────────
+
+  Future<SpaceManifest> createSpace({
+    required String prompt,
+    String? name,
+  }) async {
+    final d = await _post('/spaces/create', {
+      'prompt': prompt,
+      if (name != null) 'name': name,
+    });
+    return SpaceManifest.fromJson(d);
+  }
+
+  Future<List<SpaceSummary>> listSpaces() async {
+    final d = await _get('/spaces');
+    return _l(d).map(SpaceSummary.fromJson).toList();
+  }
+
+  Future<SpaceManifest> getSpace(String id) async {
+    final d = await _get('/spaces/$id');
+    return SpaceManifest.fromJson(d);
+  }
+
+  Future<void> deleteSpace(String id) => _delete('/spaces/$id');
+
+  Future<SpaceManifest> duplicateSpace(String id, {String? name}) async {
+    final d = await _post('/spaces/$id/duplicate', {
+      if (name != null) 'name': name,
+    });
+    return SpaceManifest.fromJson(d);
+  }
+
+  Future<Map<String, dynamic>> patchSpace(String id, String prompt) async {
+    return _m(await _post('/spaces/$id/patch', {'prompt': prompt}));
+  }
+
+  Future<List<SpaceFile>> listSpaceFiles(String id) async {
+    final d = await _get('/spaces/$id/files');
+    return _l(d).map(SpaceFile.fromJson).toList();
+  }
+
+  Future<String> readSpaceFile(String id, String path) async {
+    final encoded = Uri.encodeQueryComponent(path);
+    final d = await _get('/spaces/$id/files/content?path=$encoded');
+    return _s(_m(d)['content']);
+  }
+
+  Future<void> writeSpaceFile(String id, String path, String content) async {
+    await _post('/spaces/$id/files', {'path': path, 'content': content});
+  }
 }

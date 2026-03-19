@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Calculator</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #1a1a2e; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: 'Segoe UI', sans-serif; }
+.calc { background: #16213e; border-radius: 16px; padding: 20px; width: 280px; box-shadow: 0 8px 32px #0008; }
+#display { background: #0f3460; border-radius: 8px; padding: 12px 16px; text-align: right; margin-bottom: 16px; }
+#expr { font-size: 0.75rem; color: #7a9cc0; min-height: 18px; }
+#result { font-size: 2rem; color: #e0e8ff; word-break: break-all; }
+.grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+button {
+  background: #1a3a5a; color: #e0e8ff; border: none; border-radius: 8px;
+  padding: 16px 8px; font-size: 1.1rem; cursor: pointer; transition: background 0.15s;
+}
+button:hover { background: #2a5080; }
+.op  { background: #1a5090; color: #7eb8f7; }
+.op:hover { background: #2a6ab0; }
+.eq  { background: #1a8060; color: #a0f0d0; }
+.eq:hover { background: #1a9a70; }
+.clr { color: #f07070; }
+</style>
+</head>
+<body>
+<div class="calc">
+  <div id="display">
+    <div id="expr"></div>
+    <div id="result">0</div>
+  </div>
+  <div class="grid">
+    <button class="clr" onclick="clr()">C</button>
+    <button onclick="inp('(')">(</button>
+    <button onclick="inp(')')">)</button>
+    <button class="op" onclick="inp('/')">÷</button>
+    <button onclick="inp('7')">7</button>
+    <button onclick="inp('8')">8</button>
+    <button onclick="inp('9')">9</button>
+    <button class="op" onclick="inp('*')">×</button>
+    <button onclick="inp('4')">4</button>
+    <button onclick="inp('5')">5</button>
+    <button onclick="inp('6')">6</button>
+    <button class="op" onclick="inp('-')">−</button>
+    <button onclick="inp('1')">1</button>
+    <button onclick="inp('2')">2</button>
+    <button onclick="inp('3')">3</button>
+    <button class="op" onclick="inp('+')">+</button>
+    <button onclick="inp('0')" style="grid-column:span 2">0</button>
+    <button onclick="inp('.')">.</button>
+    <button class="eq" onclick="calc()">=</button>
+  </div>
+</div>
+<script>
+let expr = '';
+function upd() {
+  document.getElementById('expr').textContent = expr;
+  try {
+    const v = Function('"use strict";return (' + expr + ')')();
+    if (isFinite(v)) document.getElementById('result').textContent = +v.toFixed(10);
+  } catch(e) {}
+}
+function inp(c) { expr += c; upd(); }
+function clr() { expr = ''; document.getElementById('result').textContent = '0'; document.getElementById('expr').textContent = ''; }
+function calc() {
+  try {
+    const v = Function('"use strict";return (' + expr + ')')();
+    document.getElementById('result').textContent = isFinite(v) ? +v.toFixed(10) : 'Error';
+    expr = isFinite(v) ? String(+v.toFixed(10)) : '';
+    document.getElementById('expr').textContent = '';
+  } catch(e) { document.getElementById('result').textContent = 'Error'; expr = ''; }
+}
+</script>
+</body>
+</html>
