@@ -1,8 +1,10 @@
-# router.py — FastAPI REST backend for ARIA
+# router.py — FastAPI REST backend for ARIA v10
 from __future__ import annotations
 
 import json
 import os
+import re
+import subprocess
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -10,15 +12,14 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from config import CONFIG, MODEL, save_config
+from config import CONFIG, MODEL, HOME, save_config
 from db import MemoryDB
 from state import AgentState
 from tools import ToolRunner
+from tools_shell import SHELL_TOOLS, execute_shell_tool
 from utils import append_log
 
-# ---------------------------------------------------------------------------
-# LLM provider routing
-# ---------------------------------------------------------------------------
+# ── LLM providers ─────────────────────────────────────────────────────────────
 
 try:
     from llm_providers.anthropic import AnthropicProvider
@@ -35,33 +36,7 @@ try:
 except Exception:
     GeminiProvider = None  # type: ignore
 
-
-def _build_agent(provider: str, model: str):
-    """Build agent with selected LLM provider."""
-    from agent import Agent
-
-    db = MemoryDB()
-    state = AgentState()
-    state.session_id = db.start_session()
-    tools = ToolRunner(state, db)
-
-    if provider == "anthropic" and AnthropicProvider:
-        llm = AnthropicProvider(model=model)
-    elif provider == "openai" and OpenAIProvider:
-        llm = OpenAIProvider(model=model)
-    elif provider == "gemini" and GeminiProvider:
-        llm = GeminiProvider(model=model)
-    else:
-        # Fallback to default Anthropic client
-        from llm import AnthropicClient
-        llm = AnthropicClient(model=model)
-
-    return Agent(llm, db, state, tools), db, state
-
-
-# ---------------------------------------------------------------------------
-# Singleton session (one active agent per server instance)
-# ---------------------------------------------------------------------------
+# ── Singleton session ─────────────────────────────────────────────────────────
 
 _db = MemoryDB()
 _state = AgentState()
@@ -72,21 +47,19 @@ try:
     from llm import AnthropicClient
     _llm = AnthropicClient()
 except Exception:
-    _llm = None
+    _llm = None  # type: ignore
 
 try:
     from agent import Agent
-    _agent = Agent(_llm, _db, _state, _tools) if _llm else None
+    _agent: Optional[Agent] = Agent(_llm, _db, _state, _tools) if _llm else None
 except Exception:
     _agent = None
 
-# ---------------------------------------------------------------------------
-# FastAPI app
-# ---------------------------------------------------------------------------
+# ── FastAPI ───────────────────────────────────────────────────────────────────
 
 app = FastAPI(
     title="ARIA Backend",
-    description="Local AI assistant REST API",
+    description="Local AI assistant REST API — v10",
     version="10.0.0",
 )
 
@@ -97,9 +70,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ---------------------------------------------------------------------------
-# Request / Response models
-# ---------------------------------------------------------------------------
+# ── Request / Response models ─────────────────────────────────────────────────
 
 
 class ChatRequest(BaseModel):
@@ -116,6 +87,31 @@ class ChatResponse(BaseModel):
     session_id: int
 
 
+class ExecuteRequest(BaseModel):
+    tool: str
+    args: Dict[str, Any] = {}
+
+
+class ExecuteResponse(BaseModel):
+    tool: str
+    result: str
+    status: str  # "ok" | "error"
+
+
+class BuildApkRequest(BaseModel):
+    message: str = "ARIA: automated build trigger"
+    files: List[str] = []          # if empty → git add -A (restricted to safe paths)
+    remote: str = "origin"
+    branch: Optional[str] = None
+    repo_path: str = "."
+
+
+class BuildApkResponse(BaseModel):
+    status: str
+    steps: List[Dict[str, str]]    # [{step, output}]
+    message: str
+
+
 class SettingsRequest(BaseModel):
     owner_name: Optional[str] = None
     background_enabled: Optional[bool] = None
@@ -128,7 +124,7 @@ class SettingsRequest(BaseModel):
     gemini_api_key: Optional[str] = None
 
 
-class ToolRequest(BaseModel):
+class ToolExecRequest(BaseModel):
     tool: str
     args: Dict[str, Any] = {}
 
@@ -158,46 +154,61 @@ class LogEntry(BaseModel):
     line: str
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
+# ── Helpers ───────────────────────────────────────────────────────────────────
 
-LOG_FILE = Path.home() / ".aria_v9" / "aria.log"
+LOG_FILE = HOME / ".aria_v9" / "aria.log"
 
 
-def _get_agent_for_request(provider: str, model: str):
-    """Return global agent if provider matches, else build ephemeral one."""
-    global _agent, _llm, _db, _state, _tools
+def _build_llm(provider: str, model: str):
+    if provider == "openai" and OpenAIProvider:
+        return OpenAIProvider(model=model)
+    if provider == "gemini" and GeminiProvider:
+        return GeminiProvider(model=model)
+    # Default / anthropic
+    if AnthropicProvider:
+        return AnthropicProvider(model=model)
+    from llm import AnthropicClient
+    return AnthropicClient(model=model)
 
-    current_provider = CONFIG.get("active_provider", "anthropic")
-    if provider == current_provider and _agent is not None:
+
+def _get_agent(provider: str, model: str):
+    from agent import Agent
+    current_prov = CONFIG.get("active_provider", "anthropic")
+    if provider == current_prov and _agent is not None:
         return _agent, _db, _state
+    db = MemoryDB()
+    st = AgentState()
+    st.session_id = db.start_session()
+    tools = ToolRunner(st, db)
+    llm = _build_llm(provider, model)
+    return Agent(llm, db, st, tools), db, st
 
-    # Build ephemeral agent with requested provider
-    ag, db, st = _build_agent(provider, model)
-    return ag, db, st
 
-
-# ---------------------------------------------------------------------------
-# Endpoints
-# ---------------------------------------------------------------------------
+# ── Endpoints ─────────────────────────────────────────────────────────────────
 
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "version": "10.0.0"}
+    return {
+        "status": "ok",
+        "version": "10.0.0",
+        "session_id": _state.session_id,
+        "commands_run": _state.commands_run,
+    }
+
+
+# ── Chat ──────────────────────────────────────────────────────────────────────
 
 
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest):
     if not req.message.strip():
         raise HTTPException(400, "Empty message")
-
     try:
-        ag, db, st = _get_agent_for_request(req.provider, req.model)
+        ag, db, st = _get_agent(req.provider, req.model)
         reply = ag.respond(req.message)
-        append_log(f"[API] USER: {req.message[:200]}")
-        append_log(f"[API] ARIA: {reply[:300]}")
+        append_log(f"[API/chat] USER: {req.message[:200]}")
+        append_log(f"[API/chat] ARIA: {reply[:300]}")
         return ChatResponse(
             reply=reply,
             provider=req.provider,
@@ -206,7 +217,131 @@ def chat(req: ChatRequest):
             session_id=st.session_id,
         )
     except Exception as e:
+        append_log(f"[API/chat] ERROR: {e}")
         raise HTTPException(500, str(e))
+
+
+# ── Execute (shell / file / git tools) ───────────────────────────────────────
+
+
+@app.post("/execute", response_model=ExecuteResponse)
+def execute(req: ExecuteRequest):
+    """
+    Execute one of the 8 allowlisted shell/file/git tools.
+    Validates against SHELL_TOOLS registry before running.
+    All calls are logged.
+    """
+    tool = req.tool.strip()
+    append_log(f"[API/execute] tool={tool!r} args={json.dumps(req.args)[:200]}")
+
+    try:
+        result = execute_shell_tool(tool, req.args)
+        append_log(f"[API/execute] ok result={result[:200]}")
+        return ExecuteResponse(tool=tool, result=result, status="ok")
+    except ValueError as e:
+        append_log(f"[API/execute] rejected: {e}")
+        raise HTTPException(400, str(e))
+    except PermissionError as e:
+        append_log(f"[API/execute] permission: {e}")
+        raise HTTPException(403, str(e))
+    except Exception as e:
+        append_log(f"[API/execute] error: {e}")
+        raise HTTPException(500, str(e))
+
+
+# ── Build APK (git push → CI trigger) ────────────────────────────────────────
+
+
+@app.post("/build_apk", response_model=BuildApkResponse)
+def build_apk(req: BuildApkRequest):
+    """
+    Trigger APK rebuild via:
+      1. git add  (specified files, or all tracked changes)
+      2. git commit -m <message>
+      3. git push  → triggers CI/CD (e.g. GitHub Actions)
+
+    This does NOT build the APK on-device.
+    The CI pipeline handles the actual build.
+    """
+    from tools_shell import git_add, git_commit, git_push, git_status
+
+    append_log(f"[API/build_apk] msg={req.message!r} files={req.files}")
+    steps: list[dict[str, str]] = []
+
+    # Validate commit message
+    if not req.message.strip():
+        raise HTTPException(400, "Commit message cannot be empty")
+
+    # 1. git status (pre-flight)
+    status_out = git_status(req.repo_path)
+    steps.append({"step": "git_status", "output": status_out})
+
+    if "nothing to commit" in status_out and "nothing added" in status_out:
+        return BuildApkResponse(
+            status="skipped",
+            steps=steps,
+            message="Nothing to commit — working tree is clean.",
+        )
+
+    # 2. git add
+    if req.files:
+        add_out = git_add(req.files, req.repo_path)
+    else:
+        # Stage all tracked modifications (safe: excludes untracked secrets)
+        from tools_shell import _run
+        from config import HOME as _HOME
+        add_out = _run(
+            ["git", "add", "-u"],
+            req.repo_path if req.repo_path != "." else str(Path(__file__).parent),
+            30,
+        )
+    steps.append({"step": "git_add", "output": add_out})
+
+    if add_out.startswith("⚠"):
+        return BuildApkResponse(
+            status="error",
+            steps=steps,
+            message=f"git add failed: {add_out}",
+        )
+
+    # 3. git commit
+    commit_out = git_commit(
+        message=req.message,
+        repo_path=req.repo_path,
+    )
+    steps.append({"step": "git_commit", "output": commit_out})
+
+    if commit_out.startswith("⚠") and "nothing to commit" not in commit_out:
+        return BuildApkResponse(
+            status="error",
+            steps=steps,
+            message=f"git commit failed: {commit_out}",
+        )
+
+    # 4. git push → CI trigger
+    push_out = git_push(
+        remote=req.remote,
+        branch=req.branch,
+        repo_path=req.repo_path,
+        timeout=90,
+    )
+    steps.append({"step": "git_push", "output": push_out})
+
+    ok = not push_out.startswith("⚠")
+    append_log(f"[API/build_apk] push={'ok' if ok else 'fail'}: {push_out[:200]}")
+
+    return BuildApkResponse(
+        status="ok" if ok else "error",
+        steps=steps,
+        message=(
+            "Changes pushed. CI will build the APK automatically."
+            if ok
+            else f"Push failed: {push_out}"
+        ),
+    )
+
+
+# ── Memory ────────────────────────────────────────────────────────────────────
 
 
 @app.get("/memory", response_model=MemoryStats)
@@ -243,31 +378,45 @@ def get_notes(limit: int = 30):
     ]
 
 
+# ── Logs ──────────────────────────────────────────────────────────────────────
+
+
 @app.get("/logs", response_model=List[LogEntry])
-def get_logs(lines: int = 100):
+def get_logs(lines: int = 200):
     if not LOG_FILE.exists():
         return []
     try:
         text = LOG_FILE.read_text(encoding="utf-8", errors="replace")
         all_lines = text.splitlines()
-        return [LogEntry(line=l) for l in all_lines[-lines:]]
+        return [LogEntry(line=ln) for ln in all_lines[-lines:]]
     except Exception as e:
         raise HTTPException(500, str(e))
 
 
+# ── Tools ─────────────────────────────────────────────────────────────────────
+
+
 @app.get("/tools")
 def list_tools():
+    """Returns two categories of tools."""
     from safety import ALLOWED_TOOLS
-    return {"tools": sorted(ALLOWED_TOOLS)}
+    return {
+        "shell_tools": sorted(SHELL_TOOLS.keys()),
+        "agent_tools": sorted(ALLOWED_TOOLS),
+    }
 
 
 @app.post("/tools/execute")
-def execute_tool(req: ToolRequest):
+def tools_execute_legacy(req: ToolExecRequest):
+    """Legacy endpoint — executes agent (Termux) tools."""
     try:
         result = _tools.execute(req.tool, req.args)
-        return {"result": result, "tool": req.tool}
+        return {"result": result, "tool": req.tool, "status": "ok"}
     except Exception as e:
         raise HTTPException(400, str(e))
+
+
+# ── Settings ──────────────────────────────────────────────────────────────────
 
 
 @app.get("/settings")
@@ -275,24 +424,30 @@ def get_settings():
     safe = {k: v for k, v in CONFIG.items() if "key" not in k.lower()}
     safe["active_provider"] = CONFIG.get("active_provider", "anthropic")
     safe["active_model"] = CONFIG.get("active_model", MODEL)
-    safe["anthropic_key_set"] = bool(os.environ.get("ANTHROPIC_API_KEY", CONFIG.get("anthropic_api_key", "")))
-    safe["openai_key_set"] = bool(os.environ.get("OPENAI_API_KEY", CONFIG.get("openai_api_key", "")))
-    safe["gemini_key_set"] = bool(os.environ.get("GEMINI_API_KEY", CONFIG.get("gemini_api_key", "")))
+    safe["anthropic_key_set"] = bool(
+        os.environ.get("ANTHROPIC_API_KEY", CONFIG.get("anthropic_api_key", ""))
+    )
+    safe["openai_key_set"] = bool(
+        os.environ.get("OPENAI_API_KEY", CONFIG.get("openai_api_key", ""))
+    )
+    safe["gemini_key_set"] = bool(
+        os.environ.get("GEMINI_API_KEY", CONFIG.get("gemini_api_key", ""))
+    )
     return safe
 
 
 @app.post("/settings")
 def update_settings(req: SettingsRequest):
     updates = req.model_dump(exclude_none=True)
-
-    # Handle API keys → store in config (for Termux usage)
     for key_field in ("anthropic_api_key", "openai_api_key", "gemini_api_key"):
         if key_field in updates:
             CONFIG[key_field] = updates.pop(key_field)
-
     CONFIG.update(updates)
     save_config(CONFIG)
     return {"status": "ok", "updated": list(updates.keys())}
+
+
+# ── Providers ─────────────────────────────────────────────────────────────────
 
 
 @app.get("/providers")
@@ -302,7 +457,7 @@ def list_providers():
             {
                 "id": "anthropic",
                 "name": "Anthropic (Claude)",
-                "available": AnthropicProvider is not None or True,
+                "available": True,
                 "models": [
                     "claude-sonnet-4-20250514",
                     "claude-opus-4-20250514",
@@ -313,11 +468,7 @@ def list_providers():
                 "id": "openai",
                 "name": "OpenAI (GPT)",
                 "available": OpenAIProvider is not None,
-                "models": [
-                    "gpt-4o",
-                    "gpt-4o-mini",
-                    "gpt-4-turbo",
-                ],
+                "models": ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo"],
             },
             {
                 "id": "gemini",
@@ -331,6 +482,9 @@ def list_providers():
             },
         ]
     }
+
+
+# ── Memory management ─────────────────────────────────────────────────────────
 
 
 @app.delete("/memory/facts/{fact_id}")
@@ -354,9 +508,7 @@ def clear_memory():
         raise HTTPException(500, str(e))
 
 
-# ---------------------------------------------------------------------------
-# Entry point
-# ---------------------------------------------------------------------------
+# ── Entry point ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     import uvicorn

@@ -256,14 +256,48 @@ class ApiService {
     return (d as List).map((e) => (e as Map)['line'] as String).toList();
   }
 
-  Future<List<String>> getTools() async {
+  Future<Map<String, List<String>>> getTools() async {
     final d = await _get('/tools');
-    return ((d as Map)['tools'] as List).cast<String>();
+    final m = d as Map<String, dynamic>;
+    return {
+      'shell_tools': (m['shell_tools'] as List?)?.cast<String>() ?? [],
+      'agent_tools': (m['agent_tools'] as List?)?.cast<String>() ?? [],
+    };
   }
 
+  /// Calls POST /execute — the 8 allowlisted shell/file/git tools.
+  Future<String> executeShellTool(
+      String tool, Map<String, dynamic> args) async {
+    final d = await _post('/execute', {'tool': tool, 'args': args});
+    final m = d as Map<String, dynamic>;
+    if (m['status'] == 'error') {
+      throw ApiException(m['result']?.toString() ?? 'Unknown error');
+    }
+    return m['result']?.toString() ?? '';
+  }
+
+  /// Calls POST /tools/execute — legacy Termux agent tools.
   Future<String> executeTool(String tool, Map<String, dynamic> args) async {
     final d = await _post('/tools/execute', {'tool': tool, 'args': args});
     return (d as Map)['result']?.toString() ?? '';
+  }
+
+  /// Calls POST /build_apk — git add/commit/push → CI trigger.
+  Future<Map<String, dynamic>> buildApk({
+    required String message,
+    List<String> files = const [],
+    String remote = 'origin',
+    String? branch,
+    String repoPath = '.',
+  }) async {
+    final d = await _post('/build_apk', {
+      'message': message,
+      'files': files,
+      'remote': remote,
+      if (branch != null) 'branch': branch,
+      'repo_path': repoPath,
+    });
+    return d as Map<String, dynamic>;
   }
 
   Future<Map<String, dynamic>> getSettings() async {

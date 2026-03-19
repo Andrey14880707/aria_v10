@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/settings_model.dart';
 import '../services/api_service.dart';
+import 'build_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -249,6 +250,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 )
               : const Icon(Icons.save_outlined),
           label: const Text('Save Settings'),
+        ),
+
+        const SizedBox(height: 20),
+
+        // ── Build pipeline ───────────────────────────────────────────────────
+        _Section('Build Pipeline'),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const BuildScreen()),
+            ),
+            icon: const Icon(Icons.rocket_launch_outlined),
+            label: const Text('Trigger APK Build (git push → CI)'),
+          ),
         ),
 
         const SizedBox(height: 24),

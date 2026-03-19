@@ -1,4 +1,4 @@
-# safety.py
+# safety.py — Tool allowlist and path safety for ARIA
 from pathlib import Path
 
 
@@ -6,6 +6,19 @@ class ToolPolicyError(Exception):
     pass
 
 
+# Shell tools (handled by tools_shell.py with its own stricter validation)
+SHELL_TOOLS = {
+    "run_shell",
+    "read_file",
+    "write_file",
+    "list_dir",
+    "git_status",
+    "git_add",
+    "git_commit",
+    "git_push",
+}
+
+# Agent (Termux API) tools
 ALLOWED_TOOLS = {
     "battery_status",
     "location",
@@ -68,9 +81,12 @@ class SafetyPolicy:
     @staticmethod
     def ensure_safe_path(path: str) -> Path:
         p = Path(path).expanduser().resolve()
-
         for blocked in BLOCKED_PATHS:
             if str(p).startswith(blocked):
                 raise ToolPolicyError(f"path_blocked:{p}")
-
         return p
+
+    @staticmethod
+    def ensure_shell_tool_allowed(tool_name: str) -> None:
+        if tool_name not in SHELL_TOOLS:
+            raise ToolPolicyError(f"shell_tool_not_allowed:{tool_name}")
