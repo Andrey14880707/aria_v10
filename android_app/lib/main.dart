@@ -75,7 +75,7 @@ class AriaApp extends StatelessWidget {
         surfaceTintColor: Colors.transparent,
         indicatorColor: scheme.primaryContainer,
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 0,
         color: scheme.surfaceContainerHighest,
         shape: RoundedRectangleBorder(
