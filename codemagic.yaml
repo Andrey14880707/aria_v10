@@ -1,0 +1,16 @@
+workflows:
+  android-build:
+    name: Android Build
+    environment:
+      flutter: stable
+    scripts:
+      - name: Get dependencies
+        script: |
+          cd android_app
+          flutter pub get
+      - name: Build APK
+        script: |
+          cd android_app
+          flutter build apk --release
+    artifacts:
+      - android_app/build/app/outputs/flutter-apk/app-release.apk
