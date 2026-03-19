@@ -143,6 +143,10 @@ class SpacePatchRequest(BaseModel):
     prompt: str
 
 
+class SpaceDuplicateRequest(BaseModel):
+    name: Optional[str] = None
+
+
 class SpaceFileWriteRequest(BaseModel):
     path: str
     content: str
@@ -397,10 +401,9 @@ def spaces_delete(space_id: str):
 
 
 @app.post("/spaces/{space_id}/duplicate")
-def spaces_duplicate(space_id: str, body: dict = {}):
+def spaces_duplicate(space_id: str, req: SpaceDuplicateRequest):
     try:
-        new_name = body.get("name") if body else None
-        manifest = _sm.duplicate_space(space_id, new_name=new_name)
+        manifest = _sm.duplicate_space(space_id, new_name=req.name)
         return manifest
     except FileNotFoundError:
         raise HTTPException(404, f"Space not found: {space_id}")

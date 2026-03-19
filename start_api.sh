@@ -15,4 +15,10 @@ echo "Starting FastAPI server on http://0.0.0.0:8000 ..."
 echo "Flutter app should connect to http://localhost:8000"
 echo ""
 
-python -m uvicorn router:app --host 0.0.0.0 --port 8000 --reload
+# --reload-include '*.py' ensures uvicorn only restarts on Python file changes,
+# NOT when space files (index.html / app.js / space.json) are created.
+python -m uvicorn router:app \
+  --host 0.0.0.0 \
+  --port 8000 \
+  --reload \
+  --reload-include '*.py'

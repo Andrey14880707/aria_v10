@@ -1,16 +1,21 @@
 """SpaceManager — create, load, list, delete, duplicate Spaces."""
 
 import json
+import os
 import shutil
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Optional
 
 from artifact_classifier import classify
 from template_resolver import copy_template_files, template_exists
 
-SPACES_ROOT = Path(__file__).parent / "spaces"
-SPACES_ROOT.mkdir(exist_ok=True)
+# Store spaces OUTSIDE the project dir so uvicorn --reload doesn't
+# trigger a server restart when space files (index.html, app.js, etc.) change.
+_DEFAULT_ROOT = Path.home() / ".aria_v10" / "spaces"
+SPACES_ROOT = Path(os.environ.get("ARIA_SPACES_DIR", str(_DEFAULT_ROOT)))
+SPACES_ROOT.mkdir(parents=True, exist_ok=True)
 
 
 def _now() -> str:
@@ -35,7 +40,7 @@ def _save_manifest(space_id: str, manifest: dict) -> None:
 
 # ── Public API ────────────────────────────────────────────────────────────────
 
-def create_space(prompt: str, name: str | None = None) -> dict:
+def create_space(prompt: str, name: Optional[str] = None) -> dict:
     space_id = "space_" + uuid.uuid4().hex[:8]
     space_type, template = classify(prompt)
     now = _now()
@@ -122,7 +127,7 @@ def delete_space(space_id: str) -> None:
     shutil.rmtree(d)
 
 
-def duplicate_space(space_id: str, new_name: str | None = None) -> dict:
+def duplicate_space(space_id: str, new_name: Optional[str] = None) -> dict:
     src = _space_dir(space_id)
     original = _load_manifest(space_id)
     new_id = "space_" + uuid.uuid4().hex[:8]
@@ -139,7 +144,7 @@ def duplicate_space(space_id: str, new_name: str | None = None) -> dict:
     return manifest
 
 
-def bump_version(space_id: str, snapshot: dict | None = None) -> int:
+def bump_version(space_id: str, snapshot: Optional[dict] = None) -> int:
     """Increment version, optionally saving a history snapshot."""
     manifest = _load_manifest(space_id)
     v = manifest.get("version", 1)
