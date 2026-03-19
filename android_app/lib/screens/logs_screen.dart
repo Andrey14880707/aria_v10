@@ -13,7 +13,8 @@ class LogsScreen extends StatefulWidget {
 }
 
 class _LogsScreenState extends State<LogsScreen> {
-  List<_LogLine> _lines = [];
+  // Uses LogLine from api_service (already has safe parsing)
+  List<LogLine> _lines = [];
   bool _loading = false;
   int _lineCount = 200;
   String _filter = '';
@@ -35,9 +36,7 @@ class _LogsScreenState extends State<LogsScreen> {
     try {
       final raw = await _api.getLogs(lines: _lineCount);
       if (mounted) {
-        setState(() {
-          _lines = raw.map(_LogLine.parse).toList();
-        });
+        setState(() => _lines = raw);
         if (_autoScroll) _scrollToBottom();
       }
     } catch (e) {
@@ -60,7 +59,7 @@ class _LogsScreenState extends State<LogsScreen> {
   }
 
   void _copyAll() {
-    final text = _lines.map((l) => l.raw).join('\n');
+    final text = _lines.map((l) => l.display).join('\n');
     Clipboard.setData(ClipboardData(text: text));
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -68,9 +67,10 @@ class _LogsScreenState extends State<LogsScreen> {
     );
   }
 
-  List<_LogLine> get _filtered {
+  List<LogLine> get _filtered {
     if (_filter.isEmpty) return _lines;
-    return _lines.where((l) => l.raw.contains(_filter)).toList();
+    final q = _filter.toLowerCase();
+    return _lines.where((l) => l.display.toLowerCase().contains(q)).toList();
   }
 
   @override
@@ -86,7 +86,6 @@ class _LogsScreenState extends State<LogsScreen> {
           color: scheme.surface,
           child: Row(
             children: [
-              // Filter field
               Expanded(
                 child: TextField(
                   controller: _filterCtrl,
@@ -117,7 +116,6 @@ class _LogsScreenState extends State<LogsScreen> {
                 ),
               ),
               const SizedBox(width: 6),
-              // Line count picker
               DropdownButton<int>(
                 value: _lineCount,
                 isDense: true,
@@ -136,7 +134,6 @@ class _LogsScreenState extends State<LogsScreen> {
                   }
                 },
               ),
-              // Actions
               IconButton(
                 icon: const Icon(Icons.copy, size: 18),
                 tooltip: 'Copy all',
@@ -164,8 +161,7 @@ class _LogsScreenState extends State<LogsScreen> {
               ),
               const Spacer(),
               InkWell(
-                onTap: () =>
-                    setState(() => _autoScroll = !_autoScroll),
+                onTap: () => setState(() => _autoScroll = !_autoScroll),
                 child: Row(
                   children: [
                     Icon(
@@ -178,8 +174,7 @@ class _LogsScreenState extends State<LogsScreen> {
                     const SizedBox(width: 3),
                     Text(
                       _autoScroll ? 'Auto-scroll' : 'Scroll free',
-                      style: TextStyle(
-                          fontSize: 10, color: scheme.outline),
+                      style: TextStyle(fontSize: 10, color: scheme.outline),
                     ),
                   ],
                 ),
@@ -188,26 +183,20 @@ class _LogsScreenState extends State<LogsScreen> {
           ),
         ),
         const Divider(height: 1),
-        // Log lines
         Expanded(
           child: _loading && _lines.isEmpty
               ? const Center(child: CircularProgressIndicator())
               : filtered.isEmpty
                   ? Center(
-                      child: Text(
-                        'No logs.',
-                        style: TextStyle(color: scheme.outline),
-                      ),
+                      child: Text('No logs.',
+                          style: TextStyle(color: scheme.outline)),
                     )
                   : ListView.builder(
                       controller: _scrollCtrl,
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 6),
                       itemCount: filtered.length,
-                      itemBuilder: (ctx, i) {
-                        final l = filtered[i];
-                        return _LineRow(line: l);
-                      },
+                      itemBuilder: (_, i) => _LineRow(line: filtered[i]),
                     ),
         ),
       ],
@@ -222,62 +211,31 @@ class _LogsScreenState extends State<LogsScreen> {
   }
 }
 
-// ── Log line model ────────────────────────────────────────────────────────────
-
-enum _LogLevel { info, user, aria, error, boot, tool }
-
-class _LogLine {
-  final String raw;
-  final _LogLevel level;
-
-  const _LogLine(this.raw, this.level);
-
-  factory _LogLine.parse(String raw) {
-    if (raw.contains('ERROR') || raw.contains('error') || raw.contains('⚠')) {
-      return _LogLine(raw, _LogLevel.error);
-    }
-    if (raw.contains('[API] USER:') || raw.contains('USER:')) {
-      return _LogLine(raw, _LogLevel.user);
-    }
-    if (raw.contains('[API] ARIA:') || raw.contains('ARIA:')) {
-      return _LogLine(raw, _LogLevel.aria);
-    }
-    if (raw.contains('boot') || raw.contains('shutdown')) {
-      return _LogLine(raw, _LogLevel.boot);
-    }
-    if (raw.contains('tool_') || raw.contains('[tool]')) {
-      return _LogLine(raw, _LogLevel.tool);
-    }
-    return _LogLine(raw, _LogLevel.info);
-  }
-}
+// ── Log line renderer ─────────────────────────────────────────────────────────
 
 class _LineRow extends StatelessWidget {
-  final _LogLine line;
-  const _LineRow({super.key, required this.line});
+  final LogLine line;
+  const _LineRow({required this.line});
 
   Color _color(BuildContext ctx) {
     final s = Theme.of(ctx).colorScheme;
-    switch (line.level) {
-      case _LogLevel.error:
-        return s.error;
-      case _LogLevel.user:
-        return s.primary;
-      case _LogLevel.aria:
-        return s.secondary;
-      case _LogLevel.boot:
-        return s.tertiary;
-      case _LogLevel.tool:
-        return s.outline;
-      case _LogLevel.info:
-        return s.onSurfaceVariant;
-    }
+    final t = line.display;
+    if (line.level == 'error' ||
+        t.contains('ERROR') ||
+        t.contains('error') ||
+        t.contains('⚠')) return s.error;
+    if (line.level == 'warn' || t.contains('WARN')) return s.tertiary;
+    if (t.contains('USER:')) return s.primary;
+    if (t.contains('ARIA:')) return s.secondary;
+    if (t.contains('boot') || t.contains('shutdown')) return s.tertiary;
+    if (t.contains('[tool]') || t.contains('tool_')) return s.outline;
+    return s.onSurfaceVariant;
   }
 
   @override
   Widget build(BuildContext context) {
     return SelectableText(
-      line.raw,
+      line.display,
       style: TextStyle(
         fontFamily: 'monospace',
         fontSize: 11,

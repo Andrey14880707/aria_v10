@@ -75,17 +75,20 @@ class _BuildScreenState extends State<BuildScreen> {
             : _repoCtrl.text.trim(),
       );
 
-      final rawSteps = result['steps'] as List? ?? [];
+      // Safe: result is already Map<String,dynamic> from _m() in api_service
+      final rawSteps = result['steps'];
+      final stepsList = rawSteps is List ? rawSteps : <dynamic>[];
       if (mounted) {
         setState(() {
-          _steps = rawSteps
-              .map((s) => _StepResult(
-                    step: (s as Map)['step'] as String? ?? '',
-                    output: s['output'] as String? ?? '',
-                  ))
-              .toList();
-          _finalMsg = result['message'] as String?;
-          _success = result['status'] == 'ok';
+          _steps = stepsList.map((s) {
+            final m = s is Map ? s : <dynamic, dynamic>{};
+            return _StepResult(
+              step: m['step']?.toString() ?? '',
+              output: m['output']?.toString() ?? '',
+            );
+          }).toList();
+          _finalMsg = result['message']?.toString();
+          _success = result['status']?.toString() == 'ok';
         });
       }
     } catch (e) {
