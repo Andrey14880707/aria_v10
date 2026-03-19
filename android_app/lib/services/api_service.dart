@@ -1,15 +1,20 @@
-// lib/services/api_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+
+// ── Exceptions ────────────────────────────────────────────────────────────────
 
 class ApiException implements Exception {
   final String message;
   final int? statusCode;
+
   const ApiException(this.message, {this.statusCode});
 
   @override
-  String toString() => 'ApiException($statusCode): $message';
+  String toString() =>
+      statusCode != null ? 'HTTP $statusCode: $message' : message;
 }
+
+// ── Data models ───────────────────────────────────────────────────────────────
 
 class ChatResult {
   final String reply;
@@ -26,12 +31,12 @@ class ChatResult {
     required this.sessionId,
   });
 
-  factory ChatResult.fromJson(Map<String, dynamic> json) => ChatResult(
-        reply: json['reply'] as String,
-        provider: json['provider'] as String,
-        model: json['model'] as String,
-        commandsRun: json['commands_run'] as int? ?? 0,
-        sessionId: json['session_id'] as int? ?? 0,
+  factory ChatResult.fromJson(Map<String, dynamic> j) => ChatResult(
+        reply: j['reply'] as String? ?? '',
+        provider: j['provider'] as String? ?? '',
+        model: j['model'] as String? ?? '',
+        commandsRun: j['commands_run'] as int? ?? 0,
+        sessionId: j['session_id'] as int? ?? 0,
       );
 }
 
@@ -50,12 +55,12 @@ class MemoryStats {
     required this.lastThought,
   });
 
-  factory MemoryStats.fromJson(Map<String, dynamic> json) => MemoryStats(
-        sessions: json['sessions'] as int? ?? 0,
-        facts: json['facts'] as int? ?? 0,
-        commandsRun: json['commands_run'] as int? ?? 0,
-        backgroundCycles: json['background_cycles'] as int? ?? 0,
-        lastThought: json['last_thought'] as String? ?? '',
+  factory MemoryStats.fromJson(Map<String, dynamic> j) => MemoryStats(
+        sessions: j['sessions'] as int? ?? 0,
+        facts: j['facts'] as int? ?? 0,
+        commandsRun: j['commands_run'] as int? ?? 0,
+        backgroundCycles: j['background_cycles'] as int? ?? 0,
+        lastThought: j['last_thought'] as String? ?? '',
       );
 }
 
@@ -72,11 +77,11 @@ class FactEntry {
     required this.source,
   });
 
-  factory FactEntry.fromJson(Map<String, dynamic> json) => FactEntry(
-        id: json['id'] as int,
-        fact: json['fact'] as String,
-        createdAt: json['created_at'] as String? ?? '',
-        source: json['source'] as String? ?? '',
+  factory FactEntry.fromJson(Map<String, dynamic> j) => FactEntry(
+        id: j['id'] as int,
+        fact: j['fact'] as String? ?? '',
+        createdAt: j['created_at'] as String? ?? '',
+        source: j['source'] as String? ?? '',
       );
 }
 
@@ -85,34 +90,71 @@ class NoteEntry {
   final String note;
   final String createdAt;
 
-  const NoteEntry({required this.id, required this.note, required this.createdAt});
+  const NoteEntry({
+    required this.id,
+    required this.note,
+    required this.createdAt,
+  });
 
-  factory NoteEntry.fromJson(Map<String, dynamic> json) => NoteEntry(
-        id: json['id'] as int,
-        note: json['note'] as String,
-        createdAt: json['created_at'] as String? ?? '',
+  factory NoteEntry.fromJson(Map<String, dynamic> j) => NoteEntry(
+        id: j['id'] as int,
+        note: j['note'] as String? ?? '',
+        createdAt: j['created_at'] as String? ?? '',
       );
 }
+
+class ProviderInfo {
+  final String id;
+  final String name;
+  final bool available;
+  final List<String> models;
+
+  const ProviderInfo({
+    required this.id,
+    required this.name,
+    required this.available,
+    required this.models,
+  });
+
+  factory ProviderInfo.fromJson(Map<String, dynamic> j) => ProviderInfo(
+        id: j['id'] as String,
+        name: j['name'] as String,
+        available: j['available'] as bool? ?? false,
+        models: (j['models'] as List?)?.cast<String>() ?? [],
+      );
+}
+
+// ── Service ───────────────────────────────────────────────────────────────────
 
 class ApiService {
   final String baseUrl;
   final Duration timeout;
 
-  ApiService({required this.baseUrl, this.timeout = const Duration(seconds: 60)});
+  ApiService({
+    required this.baseUrl,
+    this.timeout = const Duration(seconds: 60),
+  });
+
+  // Trim trailing slash once
+  String get _base => baseUrl.endsWith('/')
+      ? baseUrl.substring(0, baseUrl.length - 1)
+      : baseUrl;
 
   Map<String, String> get _headers => {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       };
 
-  Future<T> _get<T>(String path, T Function(dynamic) parser) async {
-    final uri = Uri.parse('$baseUrl$path');
+  // ── helpers ──────────────────────────────────────────────────────────────
+
+  Future<dynamic> _get(String path) async {
+    final uri = Uri.parse('$_base$path');
     try {
       final res = await http.get(uri, headers: _headers).timeout(timeout);
       if (res.statusCode >= 400) {
-        throw ApiException(res.body, statusCode: res.statusCode);
+        throw ApiException(_tryDecodeError(res.body), statusCode: res.statusCode);
       }
-      return parser(jsonDecode(res.body));
+      return jsonDecode(res.body);
     } on ApiException {
       rethrow;
     } catch (e) {
@@ -120,16 +162,16 @@ class ApiService {
     }
   }
 
-  Future<T> _post<T>(String path, Map<String, dynamic> body, T Function(dynamic) parser) async {
-    final uri = Uri.parse('$baseUrl$path');
+  Future<dynamic> _post(String path, Map<String, dynamic> body) async {
+    final uri = Uri.parse('$_base$path');
     try {
       final res = await http
           .post(uri, headers: _headers, body: jsonEncode(body))
           .timeout(timeout);
       if (res.statusCode >= 400) {
-        throw ApiException(res.body, statusCode: res.statusCode);
+        throw ApiException(_tryDecodeError(res.body), statusCode: res.statusCode);
       }
-      return parser(jsonDecode(res.body));
+      return jsonDecode(res.body);
     } on ApiException {
       rethrow;
     } catch (e) {
@@ -137,10 +179,39 @@ class ApiService {
     }
   }
 
+  Future<dynamic> _delete(String path) async {
+    final uri = Uri.parse('$_base$path');
+    try {
+      final res = await http.delete(uri, headers: _headers).timeout(timeout);
+      if (res.statusCode >= 400) {
+        throw ApiException(_tryDecodeError(res.body), statusCode: res.statusCode);
+      }
+      if (res.body.isEmpty) return {};
+      return jsonDecode(res.body);
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ApiException(e.toString());
+    }
+  }
+
+  String _tryDecodeError(String body) {
+    try {
+      final j = jsonDecode(body) as Map<String, dynamic>;
+      return j['detail']?.toString() ?? body;
+    } catch (_) {
+      return body.length > 300 ? '${body.substring(0, 300)}…' : body;
+    }
+  }
+
+  // ── public API ────────────────────────────────────────────────────────────
+
   Future<bool> checkHealth() async {
     try {
-      final uri = Uri.parse('$baseUrl/health');
-      final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 5));
+      final uri = Uri.parse('$_base/health');
+      final res = await http
+          .get(uri, headers: _headers)
+          .timeout(const Duration(seconds: 5));
       return res.statusCode == 200;
     } catch (_) {
       return false;
@@ -151,50 +222,67 @@ class ApiService {
     required String message,
     required String provider,
     required String model,
-  }) =>
-      _post('/chat', {'message': message, 'provider': provider, 'model': model},
-          (d) => ChatResult.fromJson(d as Map<String, dynamic>));
-
-  Future<MemoryStats> getMemoryStats() =>
-      _get('/memory', (d) => MemoryStats.fromJson(d as Map<String, dynamic>));
-
-  Future<List<FactEntry>> getFacts({String query = '', int limit = 30}) =>
-      _get('/facts?query=${Uri.encodeQueryComponent(query)}&limit=$limit',
-          (d) => (d as List).map((e) => FactEntry.fromJson(e as Map<String, dynamic>)).toList());
-
-  Future<List<NoteEntry>> getNotes({int limit = 30}) =>
-      _get('/notes?limit=$limit',
-          (d) => (d as List).map((e) => NoteEntry.fromJson(e as Map<String, dynamic>)).toList());
-
-  Future<List<String>> getLogs({int lines = 100}) =>
-      _get('/logs?lines=$lines',
-          (d) => (d as List).map((e) => (e as Map)['line'] as String).toList());
-
-  Future<List<String>> getTools() =>
-      _get('/tools', (d) => (d as Map)['tools'] as List<String>? ?? []);
-
-  Future<Map<String, dynamic>> getSettings() =>
-      _get('/settings', (d) => d as Map<String, dynamic>);
-
-  Future<void> updateSettings(Map<String, dynamic> settings) =>
-      _post('/settings', settings, (_) {});
-
-  Future<Map<String, dynamic>> getProviders() =>
-      _get('/providers', (d) => d as Map<String, dynamic>);
-
-  Future<void> deleteFact(int id) async {
-    final uri = Uri.parse('$baseUrl/memory/facts/$id');
-    final res = await http.delete(uri, headers: _headers).timeout(timeout);
-    if (res.statusCode >= 400) {
-      throw ApiException(res.body, statusCode: res.statusCode);
-    }
+  }) async {
+    final d = await _post('/chat', {
+      'message': message,
+      'provider': provider,
+      'model': model,
+    });
+    return ChatResult.fromJson(d as Map<String, dynamic>);
   }
 
-  Future<void> clearMemory() async {
-    final uri = Uri.parse('$baseUrl/memory/clear');
-    final res = await http.delete(uri, headers: _headers).timeout(timeout);
-    if (res.statusCode >= 400) {
-      throw ApiException(res.body, statusCode: res.statusCode);
-    }
+  Future<MemoryStats> getMemoryStats() async {
+    final d = await _get('/memory');
+    return MemoryStats.fromJson(d as Map<String, dynamic>);
   }
+
+  Future<List<FactEntry>> getFacts({String query = '', int limit = 50}) async {
+    final q = Uri.encodeQueryComponent(query);
+    final d = await _get('/facts?query=$q&limit=$limit');
+    return (d as List)
+        .map((e) => FactEntry.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<NoteEntry>> getNotes({int limit = 50}) async {
+    final d = await _get('/notes?limit=$limit');
+    return (d as List)
+        .map((e) => NoteEntry.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<String>> getLogs({int lines = 200}) async {
+    final d = await _get('/logs?lines=$lines');
+    return (d as List).map((e) => (e as Map)['line'] as String).toList();
+  }
+
+  Future<List<String>> getTools() async {
+    final d = await _get('/tools');
+    return ((d as Map)['tools'] as List).cast<String>();
+  }
+
+  Future<String> executeTool(String tool, Map<String, dynamic> args) async {
+    final d = await _post('/tools/execute', {'tool': tool, 'args': args});
+    return (d as Map)['result']?.toString() ?? '';
+  }
+
+  Future<Map<String, dynamic>> getSettings() async {
+    final d = await _get('/settings');
+    return d as Map<String, dynamic>;
+  }
+
+  Future<void> updateSettings(Map<String, dynamic> settings) async {
+    await _post('/settings', settings);
+  }
+
+  Future<List<ProviderInfo>> getProviders() async {
+    final d = await _get('/providers');
+    return ((d as Map)['providers'] as List)
+        .map((e) => ProviderInfo.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> deleteFact(int id) => _delete('/memory/facts/$id');
+
+  Future<void> clearMemory() => _delete('/memory/clear');
 }

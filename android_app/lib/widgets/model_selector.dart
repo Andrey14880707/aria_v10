@@ -1,76 +1,61 @@
-// lib/widgets/model_selector.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../models/settings_model.dart';
 
 class ModelSelector extends StatelessWidget {
   const ModelSelector({super.key});
 
+  static const _colors = {
+    'anthropic': Color(0xFF7C3AED),
+    'openai': Color(0xFF10A37F),
+    'gemini': Color(0xFF1A73E8),
+  };
+
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsModel>();
-    final theme = Theme.of(context);
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _ProviderChip(
-          label: 'Claude',
-          id: 'anthropic',
-          selected: settings.provider == 'anthropic',
-          color: const Color(0xFF7C3AED),
-          onTap: () => settings.setProvider('anthropic'),
-        ),
-        const SizedBox(width: 6),
-        _ProviderChip(
-          label: 'GPT',
-          id: 'openai',
-          selected: settings.provider == 'openai',
-          color: const Color(0xFF10A37F),
-          onTap: () => settings.setProvider('openai'),
-        ),
-        const SizedBox(width: 6),
-        _ProviderChip(
-          label: 'Gemini',
-          id: 'gemini',
-          selected: settings.provider == 'gemini',
-          color: const Color(0xFF1A73E8),
-          onTap: () => settings.setProvider('gemini'),
-        ),
-        const SizedBox(width: 8),
-        if (settings.availableModels.isNotEmpty)
-          DropdownButton<String>(
-            value: settings.model,
-            isDense: true,
-            underline: const SizedBox(),
-            style: theme.textTheme.bodySmall,
-            items: settings.availableModels
-                .map((m) => DropdownMenuItem(
-                      value: m,
-                      child: Text(m.split('-').take(2).join('-'), overflow: TextOverflow.ellipsis),
-                    ))
-                .toList(),
-            onChanged: (m) {
-              if (m != null) settings.save(model: m);
-            },
-          ),
-      ],
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          // Provider chips
+          ...SettingsModel.providerLabels.entries.map((e) {
+            final active = settings.provider == e.key;
+            final color = _colors[e.key] ?? Theme.of(context).colorScheme.primary;
+            return Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: _ProviderChip(
+                label: e.value,
+                color: color,
+                selected: active,
+                onTap: () => settings.setProvider(e.key),
+              ),
+            );
+          }),
+
+          // Model dropdown
+          if (settings.availableModels.isNotEmpty) ...[
+            const SizedBox(width: 2),
+            _ModelDrop(settings: settings),
+          ],
+        ],
+      ),
     );
   }
 }
 
 class _ProviderChip extends StatelessWidget {
   final String label;
-  final String id;
-  final bool selected;
   final Color color;
+  final bool selected;
   final VoidCallback onTap;
 
   const _ProviderChip({
     required this.label,
-    required this.id,
-    required this.selected,
     required this.color,
+    required this.selected,
     required this.onTap,
   });
 
@@ -79,15 +64,14 @@ class _ProviderChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: selected ? color : color.withOpacity(0.1),
+          color: selected ? color : color.withOpacity(0.08),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: color,
-            width: selected ? 0 : 1,
-          ),
+          border: selected
+              ? null
+              : Border.all(color: color.withOpacity(0.4), width: 1),
         ),
         child: Text(
           label,
@@ -98,6 +82,48 @@ class _ProviderChip extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ModelDrop extends StatelessWidget {
+  final SettingsModel settings;
+  const _ModelDrop({required this.settings});
+
+  String _shortLabel(String model) {
+    // e.g. "claude-sonnet-4-20250514" → "sonnet-4"
+    final parts = model.split('-');
+    if (parts.length >= 2) return '${parts[1]}-${parts[2]}';
+    return model;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return DropdownButton<String>(
+      value: settings.availableModels.contains(settings.model)
+          ? settings.model
+          : settings.availableModels.first,
+      isDense: true,
+      underline: const SizedBox(),
+      borderRadius: BorderRadius.circular(10),
+      style: Theme.of(context)
+          .textTheme
+          .bodySmall
+          ?.copyWith(color: scheme.onSurface),
+      dropdownColor: scheme.surfaceContainerHighest,
+      items: settings.availableModels
+          .map((m) => DropdownMenuItem(
+                value: m,
+                child: Text(
+                  _shortLabel(m),
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ))
+          .toList(),
+      onChanged: (m) {
+        if (m != null) settings.setModel(m);
+      },
     );
   }
 }

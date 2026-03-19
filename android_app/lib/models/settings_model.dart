@@ -1,17 +1,19 @@
-// lib/models/settings_model.dart
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsModel extends ChangeNotifier {
-  static const _keyBackendUrl = 'backend_url';
-  static const _keyProvider = 'provider';
-  static const _keyModel = 'model';
-  static const _keyOwnerName = 'owner_name';
-  static const _keyAnthropicKey = 'anthropic_api_key';
-  static const _keyOpenaiKey = 'openai_api_key';
-  static const _keyGeminiKey = 'gemini_api_key';
+  // ── preference keys ────────────────────────────────────────────────────────
+  static const _kUrl = 'backend_url';
+  static const _kProvider = 'provider';
+  static const _kModel = 'model';
+  static const _kOwner = 'owner_name';
+  static const _kAnthropicKey = 'anthropic_api_key';
+  static const _kOpenaiKey = 'openai_api_key';
+  static const _kGeminiKey = 'gemini_api_key';
+  static const _kDarkMode = 'dark_mode_override'; // unused by theme but stored
 
-  String _backendUrl = 'http://localhost:8000';
+  // ── defaults ───────────────────────────────────────────────────────────────
+  String _backendUrl = 'http://127.0.0.1:8000';
   String _provider = 'anthropic';
   String _model = 'claude-sonnet-4-20250514';
   String _ownerName = 'User';
@@ -19,6 +21,7 @@ class SettingsModel extends ChangeNotifier {
   String _openaiKey = '';
   String _geminiKey = '';
 
+  // ── public getters ─────────────────────────────────────────────────────────
   String get backendUrl => _backendUrl;
   String get provider => _provider;
   String get model => _model;
@@ -27,61 +30,7 @@ class SettingsModel extends ChangeNotifier {
   String get openaiKey => _openaiKey;
   String get geminiKey => _geminiKey;
 
-  Future<void> load() async {
-    final prefs = await SharedPreferences.getInstance();
-    _backendUrl = prefs.getString(_keyBackendUrl) ?? 'http://localhost:8000';
-    _provider = prefs.getString(_keyProvider) ?? 'anthropic';
-    _model = prefs.getString(_keyModel) ?? 'claude-sonnet-4-20250514';
-    _ownerName = prefs.getString(_keyOwnerName) ?? 'User';
-    _anthropicKey = prefs.getString(_keyAnthropicKey) ?? '';
-    _openaiKey = prefs.getString(_keyOpenaiKey) ?? '';
-    _geminiKey = prefs.getString(_keyGeminiKey) ?? '';
-    notifyListeners();
-  }
-
-  Future<void> save({
-    String? backendUrl,
-    String? provider,
-    String? model,
-    String? ownerName,
-    String? anthropicKey,
-    String? openaiKey,
-    String? geminiKey,
-  }) async {
-    final prefs = await SharedPreferences.getInstance();
-
-    if (backendUrl != null) {
-      _backendUrl = backendUrl;
-      await prefs.setString(_keyBackendUrl, backendUrl);
-    }
-    if (provider != null) {
-      _provider = provider;
-      await prefs.setString(_keyProvider, provider);
-    }
-    if (model != null) {
-      _model = model;
-      await prefs.setString(_keyModel, model);
-    }
-    if (ownerName != null) {
-      _ownerName = ownerName;
-      await prefs.setString(_keyOwnerName, ownerName);
-    }
-    if (anthropicKey != null) {
-      _anthropicKey = anthropicKey;
-      await prefs.setString(_keyAnthropicKey, anthropicKey);
-    }
-    if (openaiKey != null) {
-      _openaiKey = openaiKey;
-      await prefs.setString(_keyOpenaiKey, openaiKey);
-    }
-    if (geminiKey != null) {
-      _geminiKey = geminiKey;
-      await prefs.setString(_keyGeminiKey, geminiKey);
-    }
-
-    notifyListeners();
-  }
-
+  // ── provider → model catalog ───────────────────────────────────────────────
   static const Map<String, List<String>> providerModels = {
     'anthropic': [
       'claude-sonnet-4-20250514',
@@ -100,12 +49,75 @@ class SettingsModel extends ChangeNotifier {
     ],
   };
 
+  static const Map<String, String> providerLabels = {
+    'anthropic': 'Claude',
+    'openai': 'GPT',
+    'gemini': 'Gemini',
+  };
+
   List<String> get availableModels => providerModels[_provider] ?? [];
+
+  // ── load / save ────────────────────────────────────────────────────────────
+  Future<void> load() async {
+    final p = await SharedPreferences.getInstance();
+    _backendUrl = p.getString(_kUrl) ?? _backendUrl;
+    _provider = p.getString(_kProvider) ?? _provider;
+    _model = p.getString(_kModel) ?? _model;
+    _ownerName = p.getString(_kOwner) ?? _ownerName;
+    _anthropicKey = p.getString(_kAnthropicKey) ?? '';
+    _openaiKey = p.getString(_kOpenaiKey) ?? '';
+    _geminiKey = p.getString(_kGeminiKey) ?? '';
+    notifyListeners();
+  }
+
+  Future<void> save({
+    String? backendUrl,
+    String? provider,
+    String? model,
+    String? ownerName,
+    String? anthropicKey,
+    String? openaiKey,
+    String? geminiKey,
+  }) async {
+    final p = await SharedPreferences.getInstance();
+
+    Future<void> set(String key, String? val) async {
+      if (val == null) return;
+      await p.setString(key, val);
+    }
+
+    if (backendUrl != null) _backendUrl = backendUrl;
+    if (provider != null) _provider = provider;
+    if (model != null) _model = model;
+    if (ownerName != null) _ownerName = ownerName;
+    if (anthropicKey != null) _anthropicKey = anthropicKey;
+    if (openaiKey != null) _openaiKey = openaiKey;
+    if (geminiKey != null) _geminiKey = geminiKey;
+
+    await set(_kUrl, backendUrl);
+    await set(_kProvider, provider);
+    await set(_kModel, model);
+    await set(_kOwner, ownerName);
+    await set(_kAnthropicKey, anthropicKey);
+    await set(_kOpenaiKey, openaiKey);
+    await set(_kGeminiKey, geminiKey);
+
+    notifyListeners();
+  }
 
   void setProvider(String p) {
     _provider = p;
     final models = providerModels[p] ?? [];
-    if (models.isNotEmpty) _model = models.first;
+    if (models.isNotEmpty && !models.contains(_model)) {
+      _model = models.first;
+    }
     notifyListeners();
+    save(provider: p, model: _model);
+  }
+
+  void setModel(String m) {
+    _model = m;
+    notifyListeners();
+    save(model: m);
   }
 }
