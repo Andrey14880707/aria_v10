@@ -11,10 +11,13 @@ from config import CONFIG
 
 
 class GeminiProvider:
-    BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
-
-    def __init__(self, model: str = "gemini-2.5-pro-exp-03-25"):
+    def __init__(self, model: str = "gemini-2.0-flash-lite"):
         self.model = model
+
+    def _base_url(self) -> str:
+        # gemini-2.x and gemini-2.5.x use v1beta; gemini-1.x uses v1
+        api_ver = "v1beta" if self.model.startswith("gemini-2") else "v1"
+        return f"https://generativelanguage.googleapis.com/{api_ver}/models"
 
     @property
     def api_key(self) -> str:
@@ -32,7 +35,7 @@ class GeminiProvider:
         if not self.api_key:
             raise RuntimeError("GEMINI_API_KEY not set")
 
-        url = f"{self.BASE_URL}/{self.model}:generateContent?key={self.api_key}"
+        url = f"{self._base_url()}/{self.model}:generateContent?key={self.api_key}"
 
         # Build Gemini contents from messages
         contents: List[Dict[str, Any]] = []
