@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'models/settings_model.dart';
 import 'screens/main_shell.dart';
+import 'services/api_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,12 +20,24 @@ void main() async {
   final settings = SettingsModel();
   await settings.load();
 
+  // Sync stored keys to backend on startup (backend loses them on restart)
+  _syncKeysToBackend(settings);
+
   runApp(
     ChangeNotifierProvider.value(
       value: settings,
       child: const AriaApp(),
     ),
   );
+}
+
+void _syncKeysToBackend(SettingsModel s) {
+  final body = <String, dynamic>{};
+  if (s.anthropicKey.isNotEmpty) body['anthropic_api_key'] = s.anthropicKey;
+  if (s.openaiKey.isNotEmpty) body['openai_api_key'] = s.openaiKey;
+  if (s.geminiKey.isNotEmpty) body['gemini_api_key'] = s.geminiKey;
+  if (body.isEmpty) return;
+  ApiService(baseUrl: s.backendUrl).updateSettings(body).catchError((_) {});
 }
 
 class AriaApp extends StatelessWidget {
