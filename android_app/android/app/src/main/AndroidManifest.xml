@@ -17,6 +17,12 @@
     <!-- Vibration (no runtime permission needed — declared here for clarity) -->
     <uses-permission android:name="android.permission.VIBRATE"/>
 
+    <!-- File picker: read files from storage -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
+
     <application
         android:label="ARIA"
         android:name="${applicationName}"
