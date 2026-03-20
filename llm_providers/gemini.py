@@ -12,16 +12,17 @@ from config import CONFIG
 
 # Remap deprecated/unavailable models to working alternatives
 _MODEL_ALIASES: Dict[str, str] = {
-    "gemini-2.0-flash": "gemini-2.0-flash-lite",
-    "gemini-1.5-flash": "gemini-2.0-flash-lite",
-    "gemini-1.5-pro": "gemini-2.0-flash-lite",
+    "gemini-2.0-flash": "gemini-2.5-flash",
+    "gemini-2.0-flash-lite": "gemini-2.5-flash",
+    "gemini-1.5-flash": "gemini-2.5-flash",
+    "gemini-1.5-pro": "gemini-2.5-flash",
 }
 
 _BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 
 
 class GeminiProvider:
-    def __init__(self, model: str = "gemini-2.0-flash-lite"):
+    def __init__(self, model: str = "gemini-2.5-flash"):
         self.model = _MODEL_ALIASES.get(model, model)
 
     @property
