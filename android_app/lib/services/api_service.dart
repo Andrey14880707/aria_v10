@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 
 // ── Safe parse helpers ────────────────────────────────────────────────────────
@@ -592,5 +593,26 @@ class ApiService {
 
   Future<void> writeSpaceFile(String id, String path, String content) async {
     await _post('/spaces/$id/files', {'path': path, 'content': content});
+  }
+
+  Future<void> deleteSpaceFile(String id, String path) async {
+    final encoded = Uri.encodeQueryComponent(path);
+    final uri = Uri.parse('$baseUrl/spaces/$id/files?path=$encoded');
+    final res = await http.delete(uri);
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception('DELETE $uri → ${res.statusCode}: ${res.body}');
+    }
+  }
+
+  Future<void> uploadSpaceFile(String id, String path, Uint8List bytes, String filename) async {
+    final encoded = Uri.encodeQueryComponent(path);
+    final uri = Uri.parse('$baseUrl/spaces/$id/files/upload?path=$encoded');
+    final req = http.MultipartRequest('POST', uri)
+      ..files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
+    final streamed = await req.send();
+    if (streamed.statusCode < 200 || streamed.statusCode >= 300) {
+      final body = await streamed.stream.bytesToString();
+      throw Exception('Upload $uri → ${streamed.statusCode}: $body');
+    }
   }
 }

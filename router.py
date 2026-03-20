@@ -8,7 +8,7 @@ import subprocess
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -532,6 +532,41 @@ def spaces_write_file(space_id: str, req: SpaceFileWriteRequest):
         _fe.write_file(space_dir, req.path, req.content)
         _sm.update_space(space_id, {})  # bump updated_at
         return {"status": "ok", "path": req.path}
+    except PermissionError as e:
+        raise HTTPException(403, str(e))
+
+
+@app.delete("/spaces/{space_id}/files")
+def spaces_delete_file(space_id: str, path: str):
+    _require_spaces()
+    try:
+        _sm.get_space(space_id)
+    except FileNotFoundError:
+        raise HTTPException(404, f"Space not found: {space_id}")
+    space_dir = _sm._space_dir(space_id)
+    try:
+        _fe.delete_file(space_dir, path)
+        _sm.update_space(space_id, {})
+        return {"status": "deleted", "path": path}
+    except FileNotFoundError:
+        raise HTTPException(404, f"File not found: {path}")
+    except PermissionError as e:
+        raise HTTPException(403, str(e))
+
+
+@app.post("/spaces/{space_id}/files/upload")
+async def spaces_upload_file(space_id: str, path: str, file: UploadFile):
+    _require_spaces()
+    try:
+        _sm.get_space(space_id)
+    except FileNotFoundError:
+        raise HTTPException(404, f"Space not found: {space_id}")
+    space_dir = _sm._space_dir(space_id)
+    try:
+        data = await file.read()
+        _fe.write_bytes(space_dir, path, data)
+        _sm.update_space(space_id, {})
+        return {"status": "ok", "path": path, "size": len(data)}
     except PermissionError as e:
         raise HTTPException(403, str(e))
 

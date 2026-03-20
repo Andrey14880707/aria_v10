@@ -25,6 +25,25 @@ def write_file(space_dir: Path, rel_path: str, content: str) -> None:
     p.write_text(content, encoding="utf-8")
 
 
+def delete_file(space_dir: Path, rel_path: str) -> None:
+    p = _resolve(space_dir, rel_path)
+    if not p.exists():
+        raise FileNotFoundError(rel_path)
+    p.unlink()
+    # Remove empty parent dirs up to files/
+    files_root = (space_dir / "files").resolve()
+    parent = p.parent
+    while parent != files_root and parent.exists() and not any(parent.iterdir()):
+        parent.rmdir()
+        parent = parent.parent
+
+
+def write_bytes(space_dir: Path, rel_path: str, data: bytes) -> None:
+    p = _resolve(space_dir, rel_path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_bytes(data)
+
+
 def list_files(space_dir: Path) -> list[dict]:
     files_dir = space_dir / "files"
     if not files_dir.exists():

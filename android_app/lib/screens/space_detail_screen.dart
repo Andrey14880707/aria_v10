@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -115,6 +116,88 @@ class _SpaceDetailScreenState extends State<SpaceDetailScreen>
       }
     } finally {
       if (mounted) setState(() => _patching = false);
+    }
+  }
+
+  Future<void> _uploadFile() async {
+    final result = await FilePicker.platform.pickFiles(withData: true);
+    if (result == null || result.files.isEmpty) return;
+    final f = result.files.first;
+    if (f.bytes == null) return;
+    final path = f.name;
+    try {
+      await _api.uploadSpaceFile(widget.spaceId, path, f.bytes!, f.name);
+      await _load();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Uploaded: $path'), duration: const Duration(seconds: 2)),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+      }
+    }
+  }
+
+  Future<void> _createFile() async {
+    final ctrl = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('New File'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'File name',
+            hintText: 'e.g. style.css, script.js',
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+    if (name == null || name.isEmpty) return;
+    try {
+      await _api.writeSpaceFile(widget.spaceId, name, '');
+      await _load();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e')));
+      }
+    }
+  }
+
+  Future<void> _deleteFile(SpaceFile f) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete File'),
+        content: Text('Delete "${f.path}"?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await _api.deleteSpaceFile(widget.spaceId, f.path);
+      await _load();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Delete failed: $e')));
+      }
     }
   }
 
@@ -274,26 +357,78 @@ class _SpaceDetailScreenState extends State<SpaceDetailScreen>
     if (_openFilePath != null) {
       return _buildFileEditor(scheme);
     }
-    if (_files.isEmpty) {
-      return Center(
-        child: Text('No files', style: TextStyle(color: scheme.outline)),
-      );
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.all(8),
-      itemCount: _files.length,
-      itemBuilder: (_, i) {
-        final f = _files[i];
-        return ListTile(
-          leading: Icon(_fileIcon(f.path), size: 20, color: scheme.primary),
-          title: Text(f.path, style: const TextStyle(fontFamily: 'monospace', fontSize: 13)),
-          trailing: Text(
-            '${f.size}B',
-            style: TextStyle(fontSize: 11, color: scheme.outline),
+    return Column(
+      children: [
+        // Toolbar
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          color: scheme.surfaceContainerHighest,
+          child: Row(
+            children: [
+              Text(
+                '${_files.length} file${_files.length == 1 ? '' : 's'}',
+                style: TextStyle(fontSize: 12, color: scheme.outline),
+              ),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: _uploadFile,
+                icon: const Icon(Icons.upload_file, size: 16),
+                label: const Text('Upload', style: TextStyle(fontSize: 12)),
+                style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+              ),
+              const SizedBox(width: 4),
+              TextButton.icon(
+                onPressed: _createFile,
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('New', style: TextStyle(fontSize: 12)),
+                style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+              ),
+            ],
           ),
-          onTap: () => _openFile(f),
-        );
-      },
+        ),
+        Expanded(
+          child: _files.isEmpty
+              ? Center(child: Text('No files', style: TextStyle(color: scheme.outline)))
+              : ListView.builder(
+                  padding: const EdgeInsets.all(8),
+                  itemCount: _files.length,
+                  itemBuilder: (_, i) {
+                    final f = _files[i];
+                    return Dismissible(
+                      key: ValueKey(f.path),
+                      direction: DismissDirection.endToStart,
+                      background: Container(
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.only(right: 16),
+                        color: scheme.errorContainer,
+                        child: Icon(Icons.delete_outline, color: scheme.error),
+                      ),
+                      confirmDismiss: (_) async {
+                        await _deleteFile(f);
+                        return false; // _load() already refreshes
+                      },
+                      child: ListTile(
+                        leading: Icon(_fileIcon(f.path), size: 20, color: scheme.primary),
+                        title: Text(f.path, style: const TextStyle(fontFamily: 'monospace', fontSize: 13)),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _fmtSize(f.size),
+                              style: TextStyle(fontSize: 11, color: scheme.outline),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(Icons.chevron_right, size: 16, color: scheme.outline),
+                          ],
+                        ),
+                        onTap: () => _openFile(f),
+                        onLongPress: () => _deleteFile(f),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 
@@ -429,6 +564,12 @@ class _SpaceDetailScreenState extends State<SpaceDetailScreen>
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+String _fmtSize(int bytes) {
+  if (bytes < 1024) return '${bytes}B';
+  if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)}KB';
+  return '${(bytes / (1024 * 1024)).toStringAsFixed(1)}MB';
+}
 
 IconData _fileIcon(String path) {
   if (path.endsWith('.html')) return Icons.html;

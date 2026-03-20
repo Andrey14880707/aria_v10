@@ -29,6 +29,9 @@ dependencies:
   # WebView for Space preview
   webview_flutter: ^4.7.0
 
+  # File picker for uploading files to Spaces
+  file_picker: ^8.1.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
