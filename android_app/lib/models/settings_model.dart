@@ -43,7 +43,8 @@ class SettingsModel extends ChangeNotifier {
       'gpt-4-turbo',
     ],
     'gemini': [
-      'gemini-2.0-flash',
+      'gemini-2.5-pro-exp-03-25',
+      'gemini-2.0-flash-lite',
       'gemini-1.5-pro',
       'gemini-1.5-flash',
     ],

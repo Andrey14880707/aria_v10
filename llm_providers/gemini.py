@@ -13,7 +13,7 @@ from config import CONFIG
 class GeminiProvider:
     BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 
-    def __init__(self, model: str = "gemini-2.0-flash"):
+    def __init__(self, model: str = "gemini-2.5-pro-exp-03-25"):
         self.model = model
 
     @property
