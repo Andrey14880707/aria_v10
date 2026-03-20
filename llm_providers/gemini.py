@@ -10,14 +10,19 @@ import requests
 from config import CONFIG
 
 
+# Remap deprecated/unavailable models to working alternatives
+_MODEL_ALIASES: Dict[str, str] = {
+    "gemini-2.0-flash": "gemini-2.0-flash-lite",
+    "gemini-1.5-flash": "gemini-2.0-flash-lite",
+    "gemini-1.5-pro": "gemini-2.0-flash-lite",
+}
+
+_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
+
+
 class GeminiProvider:
     def __init__(self, model: str = "gemini-2.0-flash-lite"):
-        self.model = model
-
-    def _base_url(self) -> str:
-        # gemini-2.x and gemini-2.5.x use v1beta; gemini-1.x uses v1
-        api_ver = "v1beta" if self.model.startswith("gemini-2") else "v1"
-        return f"https://generativelanguage.googleapis.com/{api_ver}/models"
+        self.model = _MODEL_ALIASES.get(model, model)
 
     @property
     def api_key(self) -> str:
@@ -35,7 +40,7 @@ class GeminiProvider:
         if not self.api_key:
             raise RuntimeError("GEMINI_API_KEY not set")
 
-        url = f"{self._base_url()}/{self.model}:generateContent?key={self.api_key}"
+        url = f"{_BASE_URL}/{self.model}:generateContent?key={self.api_key}"
 
         # Build Gemini contents from messages
         contents: List[Dict[str, Any]] = []
