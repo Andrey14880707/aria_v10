@@ -48,7 +48,7 @@ class AnthropicProvider:
             self.API_URL,
             headers=self._headers(),
             json=payload,
-            timeout=70,
+            timeout=180,
         )
         if r.status_code >= 400:
             raise RuntimeError(f"Anthropic {r.status_code}: {r.text[:400]}")

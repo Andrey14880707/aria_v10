@@ -469,7 +469,7 @@ def spaces_patch(space_id: str, req: SpacePatchRequest):
         response = llm.chat(
             messages=[{"role": "user", "content": prompt_text}],
             system=PATCH_SYSTEM,
-            max_tokens=4096,
+            max_tokens=16000,
         )
     except Exception as e:
         raise HTTPException(500, f"LLM error: {e}")
