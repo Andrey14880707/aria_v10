@@ -448,16 +448,24 @@ def spaces_patch(space_id: str, req: SpacePatchRequest):
     prompt_text = build_patch_prompt(space_dir, req.prompt)
 
     # Call LLM for patch
+    provider = CONFIG.get("active_provider", "anthropic")
+    model = CONFIG.get("active_model", MODEL)
+
+    # Check API key before attempting call
+    key_map = {
+        "anthropic": CONFIG.get("anthropic_api_key") or os.environ.get("ANTHROPIC_API_KEY"),
+        "gemini": CONFIG.get("gemini_api_key") or os.environ.get("GEMINI_API_KEY"),
+        "openai": CONFIG.get("openai_api_key") or os.environ.get("OPENAI_API_KEY"),
+    }
+    if not key_map.get(provider):
+        raise HTTPException(
+            503,
+            f"API key for provider '{provider}' is not configured. "
+            "Go to Settings and add the key."
+        )
+
     try:
-        ag, _, _ = _get_agent(
-            CONFIG.get("active_provider", "anthropic"),
-            CONFIG.get("active_model", MODEL),
-        )
-        # Build messages for raw LLM call (bypass agent tool loop)
-        llm = _build_llm(
-            CONFIG.get("active_provider", "anthropic"),
-            CONFIG.get("active_model", MODEL),
-        )
+        llm = _build_llm(provider, model)
         response = llm.chat(
             messages=[{"role": "user", "content": prompt_text}],
             system=PATCH_SYSTEM,
