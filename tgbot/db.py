@@ -219,3 +219,20 @@ def get_upcoming_bookings(days: int = 7) -> list:
                JOIN services s ON b.service_id=s.id
                WHERE b.date BETWEEN date('now') AND ? AND b.status='active'
                ORDER BY b.date, b.time""", (end,)).fetchall()
+
+
+def get_bookings_for_reminder() -> list:
+    """Записи, начинающиеся через 29–31 минут (окно для напоминания за 30 мин)."""
+    now = datetime.now()
+    lo = now + timedelta(minutes=29)
+    hi = now + timedelta(minutes=31)
+    today = now.date().isoformat()
+    lo_t = f"{lo.hour:02d}:{lo.minute:02d}"
+    hi_t = f"{hi.hour:02d}:{hi.minute:02d}"
+    with _conn() as conn:
+        return conn.execute(
+            """SELECT b.*, s.name AS svc_name, s.emoji, s.duration
+               FROM bookings b JOIN services s ON b.service_id=s.id
+               WHERE b.date=? AND b.time BETWEEN ? AND ? AND b.status='active'
+               ORDER BY b.time""",
+            (today, lo_t, hi_t)).fetchall()

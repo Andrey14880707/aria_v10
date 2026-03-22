@@ -1,6 +1,8 @@
 """München Barber — бот для записи. python bot.py"""
 
 import logging
+import threading
+import time as _time
 from datetime import date, timedelta
 import telebot
 from telebot.types import (
@@ -442,8 +444,34 @@ def on_cb(cb):
     bot.answer_callback_query(cb.id)
 
 
+# ── Напоминания ────────────────────────────────────────────────────────────────
+
+_reminded_ids: set[int] = set()
+
+def _reminder_loop():
+    """Каждую минуту проверяет записи через ~30 минут и отправляет напоминание."""
+    while True:
+        _time.sleep(60)
+        try:
+            for b in db.get_bookings_for_reminder():
+                if b["id"] in _reminded_ids:
+                    continue
+                _reminded_ids.add(b["id"])
+                try:
+                    bot.send_message(
+                        b["user_id"],
+                        f"⏰ <b>Напоминание!</b>\n\n"
+                        f"Через 30 минут — {b['emoji']} <b>{b['svc_name']}</b>\n"
+                        f"🕐 {b['time']}  ·  💈 Мишаня\n\n"
+                        "Ждём тебя! ✂️")
+                except Exception as e:
+                    log.warning("Reminder failed uid=%s: %s", b["user_id"], e)
+        except Exception as e:
+            log.error("Reminder loop error: %s", e)
+
+
 if __name__ == "__main__":
     db.init_db()
-    # Удалить старые данные и пересоздать если нужно
+    threading.Thread(target=_reminder_loop, daemon=True, name="reminder").start()
     log.info("München Barber bot started 💈")
     bot.infinity_polling()
