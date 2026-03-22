@@ -5,6 +5,7 @@ import threading
 import time as _time
 from datetime import date, timedelta
 import telebot
+import io
 from telebot.types import (
     InlineKeyboardMarkup, InlineKeyboardButton,
     ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove,
@@ -18,6 +19,7 @@ log = logging.getLogger(__name__)
 bot = telebot.TeleBot(config.BOT_TOKEN, parse_mode="HTML")
 
 MASTER_ID = 1  # Мишаня — единственный мастер
+_book_lock = threading.Lock()  # защита от двойного бронирования
 
 # ── FSM ────────────────────────────────────────────────────────────────────────
 STATE: dict[int, dict] = {}
@@ -196,7 +198,10 @@ def cmd_my(msg):
 def cmd_admin(msg):
     if msg.from_user.id not in config.ADMIN_IDS: return
     bot.send_message(msg.chat.id,
-        "🛠 <b>Админ-панель</b>\n\n/today /tomorrow /week /stats")
+        "🛠 <b>Админ-панель</b>\n\n"
+        "<b>Записи:</b> /today /tomorrow /week /stats /export\n"
+        "<b>Расписание:</b> /schedule /sethours /offday\n"
+        "<b>Блокировки:</b> /block /unblock /blocked")
 
 @bot.message_handler(commands=["today"])
 def cmd_today(msg):
@@ -233,6 +238,111 @@ def cmd_stats(msg):
         f"📊 <b>Следующие 30 дней</b>\n\n"
         f"📋 Записей:  {len(bookings)}\n"
         f"💰 Выручка: {sum(b['price'] for b in bookings)}€")
+
+RU_DAYS_FULL = ["Понедельник","Вторник","Среда","Четверг","Пятница","Суббота","Воскресенье"]
+
+@bot.message_handler(commands=["schedule"])
+def cmd_schedule(msg):
+    if msg.from_user.id not in config.ADMIN_IDS: return
+    hours = db.get_working_hours(MASTER_ID)
+    by_day = {r["weekday"]: r for r in hours}
+    lines = ["📅 <b>Расписание Мишани:</b>\n"]
+    for d in range(7):
+        if d in by_day:
+            r = by_day[d]
+            lines.append(f"{RU_DAYS_S[d]}  {r['start_time']}–{r['end_time']}")
+        else:
+            lines.append(f"{RU_DAYS_S[d]}  выходной")
+    lines.append("\n<i>/sethours &lt;0-6&gt; &lt;HH:MM&gt; &lt;HH:MM&gt; — изменить день</i>")
+    lines.append("<i>/offday &lt;0-6&gt; — убрать день (выходной)</i>")
+    bot.send_message(msg.chat.id, "\n".join(lines))
+
+@bot.message_handler(commands=["sethours"])
+def cmd_sethours(msg):
+    if msg.from_user.id not in config.ADMIN_IDS: return
+    parts = msg.text.split()
+    if len(parts) != 4:
+        bot.send_message(msg.chat.id, "Формат: /sethours &lt;0-6&gt; &lt;10:00&gt; &lt;20:00&gt;"); return
+    try:
+        weekday = int(parts[1])
+        assert 0 <= weekday <= 6
+        start, end = parts[2], parts[3]
+        # простая валидация формата
+        for t in (start, end):
+            h, m = map(int, t.split(":"))
+            assert 0 <= h <= 23 and 0 <= m <= 59
+    except Exception:
+        bot.send_message(msg.chat.id, "Неверный формат. Пример: /sethours 0 10:00 20:00"); return
+    db.set_working_hours(MASTER_ID, weekday, start, end)
+    bot.send_message(msg.chat.id, f"✅ {RU_DAYS_FULL[weekday]}: {start}–{end}")
+
+@bot.message_handler(commands=["offday"])
+def cmd_offday(msg):
+    if msg.from_user.id not in config.ADMIN_IDS: return
+    parts = msg.text.split()
+    if len(parts) != 2 or not parts[1].isdigit() or not (0 <= int(parts[1]) <= 6):
+        bot.send_message(msg.chat.id, "Формат: /offday &lt;0-6&gt;  (0=Пн, 6=Вс)"); return
+    weekday = int(parts[1])
+    db.del_working_hours(MASTER_ID, weekday)
+    bot.send_message(msg.chat.id, f"✅ {RU_DAYS_FULL[weekday]} — выходной")
+
+@bot.message_handler(commands=["block"])
+def cmd_block(msg):
+    if msg.from_user.id not in config.ADMIN_IDS: return
+    parts = msg.text.split(maxsplit=2)
+    if len(parts) < 2:
+        bot.send_message(msg.chat.id, "Формат: /block YYYY-MM-DD [причина]"); return
+    try:
+        date.fromisoformat(parts[1])
+    except ValueError:
+        bot.send_message(msg.chat.id, "Неверная дата. Формат: YYYY-MM-DD"); return
+    reason = parts[2] if len(parts) == 3 else ""
+    db.block_day(MASTER_ID, parts[1], reason)
+    bot.send_message(msg.chat.id,
+        f"🔒 {fmt_date(parts[1])} заблокирован"
+        + (f" — {reason}" if reason else ""))
+
+@bot.message_handler(commands=["unblock"])
+def cmd_unblock(msg):
+    if msg.from_user.id not in config.ADMIN_IDS: return
+    parts = msg.text.split()
+    if len(parts) != 2:
+        bot.send_message(msg.chat.id, "Формат: /unblock YYYY-MM-DD"); return
+    if db.unblock_day(MASTER_ID, parts[1]):
+        bot.send_message(msg.chat.id, f"🔓 {fmt_date(parts[1])} разблокирован")
+    else:
+        bot.send_message(msg.chat.id, "Дата не найдена в списке блокировок")
+
+@bot.message_handler(commands=["blocked"])
+def cmd_blocked(msg):
+    if msg.from_user.id not in config.ADMIN_IDS: return
+    days = db.get_blocked_days(MASTER_ID)
+    if not days:
+        bot.send_message(msg.chat.id, "🔓 Нет заблокированных дат"); return
+    lines = ["🔒 <b>Заблокированные даты:</b>\n"]
+    for d in days:
+        reason = f" — {d['reason']}" if d["reason"] else ""
+        lines.append(f"• {fmt_date(d['date'])}{reason}")
+    bot.send_message(msg.chat.id, "\n".join(lines))
+
+@bot.message_handler(commands=["export"])
+def cmd_export(msg):
+    if msg.from_user.id not in config.ADMIN_IDS: return
+    bookings = db.get_bookings_export(30)
+    if not bookings:
+        bot.send_message(msg.chat.id, "📭 Нет записей на 30 дней"); return
+    buf = io.StringIO()
+    buf.write("ID;Дата;Время;Клиент;Телефон;Услуга;Мин;Цена€;Статус;Мастер\n")
+    for b in bookings:
+        buf.write(
+            f"{b['id']};{b['date']};{b['time']};"
+            f"{b['user_name'] or ''};{b['phone'] or ''};"
+            f"{b['svc_name']};{b['duration']};{b['price']};"
+            f"{b['status']};{b['master_name']}\n")
+    data = buf.getvalue().encode("utf-8-sig")  # BOM для Excel
+    bot.send_document(msg.chat.id,
+        (f"export_{date.today()}.csv", io.BytesIO(data), "text/csv"),
+        caption=f"📊 Экспорт записей · {len(bookings)} строк")
 
 def _send_day(chat_id: int, day: date):
     bookings = db.get_bookings_for_date(day.isoformat())
@@ -338,20 +448,23 @@ def on_cb(cb):
         sid      = int(parts[1])
         day_str  = parts[2]
         time_str = f"{parts[3]}:{parts[4]}"
-        slots = db.get_available_slots(MASTER_ID, date.fromisoformat(day_str), s["duration"])
-        if time_str not in slots:
-            bot.answer_callback_query(cb.id, "😔 Это время уже занято!", show_alert=True)
-            clr(uid); return
-        bid = db.create_booking(
-            user_id=uid, user_name=cb.from_user.username or cb.from_user.full_name,
-            phone=s.get("phone"), master_id=MASTER_ID, service_id=sid,
-            day=day_str, time=time_str)
+        with _book_lock:
+            slots = db.get_available_slots(MASTER_ID, date.fromisoformat(day_str), s["duration"])
+            if time_str not in slots:
+                bot.answer_callback_query(cb.id, "😔 Это время уже занято!", show_alert=True)
+                clr(uid); return
+            bid = db.create_booking(
+                user_id=uid, user_name=cb.from_user.username or cb.from_user.full_name,
+                phone=s.get("phone"), master_id=MASTER_ID, service_id=sid,
+                day=day_str, time=time_str)
         clr(uid)
-        edit(
+        edit("✅ <b>Бронируем...</b>")
+        bot.send_message(cid,
             f"🎉 <b>Запись подтверждена!</b>\n\n"
             + summary(s) +
             f"\n\n🔖 № {bid}\n\n"
-            "До встречи! Если нужно отменить — нажми «📋 Мои записи».")
+            "Напомним за день и за 30 минут до визита.\n"
+            "Для отмены — «📋 Мои записи».")
         bot.send_message(cid, "Главное меню:", reply_markup=main_menu())
         bot.answer_callback_query(cb.id, "✅ Готово!")
         for admin_id in config.ADMIN_IDS:
@@ -382,9 +495,19 @@ def on_cb(cb):
 
     elif data.startswith("cancel_booking:"):
         bid = int(data.split(":")[1])
+        b = db.get_booking(bid)
         if db.cancel_booking(bid, uid):
             edit(f"❌ Запись #{bid} отменена.\n\nЖдём в следующий раз! ✂️")
             bot.answer_callback_query(cb.id, "Отменено")
+            if b:
+                for admin_id in config.ADMIN_IDS:
+                    try:
+                        bot.send_message(admin_id,
+                            f"⚠️ <b>Клиент отменил запись #{bid}</b>\n\n"
+                            f"👤 @{b['user_name'] or '—'}\n"
+                            f"{b['emoji']} {b['svc_name']}  ·  {b['duration']} мин\n"
+                            f"📅 {fmt_date(b['date'])}  🕐 {b['time']}")
+                    except: pass
         else:
             bot.answer_callback_query(cb.id, "Ошибка", show_alert=True)
 
@@ -404,7 +527,14 @@ def on_cb(cb):
         if db.mark_done(bid):
             edit(cb.message.text + "\n\n✅ <b>Выполнено</b>")
             if b:
-                try: bot.send_message(b["user_id"], "✅ Спасибо за визит! Ждём снова в München Barber ✂️")
+                rebook_kb = InlineKeyboardMarkup()
+                rebook_kb.add(InlineKeyboardButton(
+                    f"✂️ Записаться снова — {b['emoji']} {b['svc_name']}",
+                    callback_data=f"rebook:{b['service_id']}"))
+                try:
+                    bot.send_message(b["user_id"],
+                        "✅ Спасибо за визит! Ждём снова в München Barber ✂️",
+                        reply_markup=rebook_kb)
                 except: pass
             bot.answer_callback_query(cb.id, "Отмечено")
 
@@ -438,6 +568,22 @@ def on_cb(cb):
         edit("❌ Отменено.")
         bot.send_message(cid, "Главное меню:", reply_markup=main_menu())
 
+    # ── Записаться снова ──
+    elif data.startswith("rebook:"):
+        sid = int(data.split(":")[1])
+        svc = db.get_service(sid)
+        if not svc:
+            bot.answer_callback_query(cb.id, "Услуга не найдена"); return
+        clr(uid)
+        upd(uid, service_id=sid, svc_name=svc["name"], emoji=svc["emoji"],
+            duration=svc["duration"], price=svc["price"])
+        set_step(uid, "choose_date")
+        bot.send_message(cid,
+            f"<b>{svc['emoji']} {svc['name']}</b>\n"
+            f"⏱ {svc['duration']} мин  ·  💰 {svc['price']}€\n\n"
+            "Выбери дату 👇",
+            reply_markup=calendar_kb(sid, svc["duration"]))
+
     elif data == "noop":
         pass
 
@@ -446,26 +592,36 @@ def on_cb(cb):
 
 # ── Напоминания ────────────────────────────────────────────────────────────────
 
-_reminded_ids: set[int] = set()
+_reminded_30: set[int] = set()   # id записей, которым уже отправили за 30 мин
+_reminded_24h: set[int] = set()  # id записей, которым уже отправили за 24 ч
 
 def _reminder_loop():
-    """Каждую минуту проверяет записи через ~30 минут и отправляет напоминание."""
+    """Каждую минуту проверяет и отправляет напоминания за 30 мин и за 24 ч."""
     while True:
         _time.sleep(60)
         try:
-            for b in db.get_bookings_for_reminder():
-                if b["id"] in _reminded_ids:
-                    continue
-                _reminded_ids.add(b["id"])
-                try:
-                    bot.send_message(
-                        b["user_id"],
-                        f"⏰ <b>Напоминание!</b>\n\n"
-                        f"Через 30 минут — {b['emoji']} <b>{b['svc_name']}</b>\n"
-                        f"🕐 {b['time']}  ·  💈 Мишаня\n\n"
-                        "Ждём тебя! ✂️")
-                except Exception as e:
-                    log.warning("Reminder failed uid=%s: %s", b["user_id"], e)
+            for b in db.get_bookings_due_for_reminder(30):
+                if b["id"] not in _reminded_30:
+                    _reminded_30.add(b["id"])
+                    try:
+                        bot.send_message(b["user_id"],
+                            f"⏰ <b>Через 30 минут!</b>\n\n"
+                            f"{b['emoji']} <b>{b['svc_name']}</b>  ·  🕐 {b['time']}\n"
+                            "💈 Мишаня ждёт. До встречи! ✂️")
+                    except Exception as e:
+                        log.warning("30m reminder failed uid=%s: %s", b["user_id"], e)
+
+            for b in db.get_bookings_due_for_reminder(24 * 60):
+                if b["id"] not in _reminded_24h:
+                    _reminded_24h.add(b["id"])
+                    try:
+                        bot.send_message(b["user_id"],
+                            f"📅 <b>Напоминание на завтра!</b>\n\n"
+                            f"{b['emoji']} <b>{b['svc_name']}</b>\n"
+                            f"🕐 {b['time']}  ·  💈 Мишаня\n\n"
+                            "Ждём тебя! Если планы изменились — «📋 Мои записи».")
+                    except Exception as e:
+                        log.warning("24h reminder failed uid=%s: %s", b["user_id"], e)
         except Exception as e:
             log.error("Reminder loop error: %s", e)
 

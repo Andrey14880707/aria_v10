@@ -4,10 +4,17 @@ import sqlite3
 from datetime import datetime, date, timedelta
 from pathlib import Path
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 import config
 
 DB_PATH = Path(__file__).parent / "barber.db"
+_tz = ZoneInfo(config.TIMEZONE)
+
+
+def _now() -> datetime:
+    """Текущее время в часовом поясе барбершопа."""
+    return datetime.now(_tz)
 
 
 def _conn() -> sqlite3.Connection:
@@ -39,7 +46,15 @@ def init_db() -> None:
             weekday    INTEGER NOT NULL,
             start_time TEXT    NOT NULL DEFAULT '10:00',
             end_time   TEXT    NOT NULL DEFAULT '20:00',
-            PRIMARY KEY (master_id, weekday)
+            PRIMARY KEY (master_id, weekday),
+            FOREIGN KEY (master_id) REFERENCES masters(id)
+        );
+        CREATE TABLE IF NOT EXISTS blocked_days (
+            master_id INTEGER NOT NULL,
+            date      TEXT    NOT NULL,
+            reason    TEXT    DEFAULT '',
+            PRIMARY KEY (master_id, date),
+            FOREIGN KEY (master_id) REFERENCES masters(id)
         );
         CREATE TABLE IF NOT EXISTS bookings (
             id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -62,7 +77,6 @@ def init_db() -> None:
 
         if conn.execute("SELECT COUNT(*) FROM services").fetchone()[0] == 0:
             services = [
-                # (name, emoji, category, duration, price)
                 ("Стрижка",                   "✂️",  "Стрижка", 45, 35),
                 ("Стрижка + укладка",         "✂️💧", "Стрижка", 60, 45),
                 ("Детская стрижка (до 12 л)", "👦",  "Стрижка", 30, 25),
@@ -106,6 +120,59 @@ def get_service(sid: int) -> Optional[sqlite3.Row]:
         return conn.execute("SELECT * FROM services WHERE id=?", (sid,)).fetchone()
 
 
+# ── Working hours ──────────────────────────────────────────────────────────────
+
+def get_working_hours(master_id: int) -> list:
+    with _conn() as conn:
+        return conn.execute(
+            "SELECT * FROM working_hours WHERE master_id=? ORDER BY weekday",
+            (master_id,)).fetchall()
+
+def set_working_hours(master_id: int, weekday: int, start: str, end: str) -> None:
+    with _conn() as conn:
+        conn.execute(
+            "INSERT OR REPLACE INTO working_hours (master_id, weekday, start_time, end_time) VALUES (?,?,?,?)",
+            (master_id, weekday, start, end))
+        conn.commit()
+
+def del_working_hours(master_id: int, weekday: int) -> None:
+    with _conn() as conn:
+        conn.execute(
+            "DELETE FROM working_hours WHERE master_id=? AND weekday=?",
+            (master_id, weekday))
+        conn.commit()
+
+
+# ── Blocked days ───────────────────────────────────────────────────────────────
+
+def block_day(master_id: int, date_str: str, reason: str = "") -> None:
+    with _conn() as conn:
+        conn.execute(
+            "INSERT OR REPLACE INTO blocked_days (master_id, date, reason) VALUES (?,?,?)",
+            (master_id, date_str, reason))
+        conn.commit()
+
+def unblock_day(master_id: int, date_str: str) -> bool:
+    with _conn() as conn:
+        cur = conn.execute(
+            "DELETE FROM blocked_days WHERE master_id=? AND date=?",
+            (master_id, date_str))
+        conn.commit()
+        return cur.rowcount > 0
+
+def is_day_blocked(master_id: int, day: date) -> bool:
+    with _conn() as conn:
+        return conn.execute(
+            "SELECT 1 FROM blocked_days WHERE master_id=? AND date=?",
+            (master_id, day.isoformat())).fetchone() is not None
+
+def get_blocked_days(master_id: int) -> list:
+    with _conn() as conn:
+        return conn.execute(
+            "SELECT * FROM blocked_days WHERE master_id=? AND date >= date('now') ORDER BY date",
+            (master_id,)).fetchall()
+
+
 # ── Slots ──────────────────────────────────────────────────────────────────────
 
 def _t2m(t: str) -> int:
@@ -116,6 +183,8 @@ def _m2t(m: int) -> str:
     return f"{m // 60:02d}:{m % 60:02d}"
 
 def get_available_slots(master_id: int, day: date, duration: int) -> list:
+    if is_day_blocked(master_id, day):
+        return []
     weekday = day.weekday()
     with _conn() as conn:
         wh = conn.execute(
@@ -133,8 +202,8 @@ def get_available_slots(master_id: int, day: date, duration: int) -> list:
     busy = [(_t2m(r["time"]), _t2m(r["time"]) + r["duration"]) for r in booked]
 
     now_min = None
-    if day == date.today():
-        n = datetime.now()
+    if day == _now().date():
+        n = _now()
         now_min = n.hour * 60 + n.minute + 30
 
     slots, cur = [], start
@@ -149,6 +218,9 @@ def get_available_slots(master_id: int, day: date, duration: int) -> list:
 
 def has_slot(master_id: int, day: date, duration: int) -> bool:
     return bool(get_available_slots(master_id, day, duration))
+
+def any_master_has_slot(day: date, duration: int) -> bool:
+    return any(has_slot(m["id"], day, duration) for m in get_masters())
 
 
 # ── Bookings ───────────────────────────────────────────────────────────────────
@@ -210,7 +282,7 @@ def get_bookings_for_date(day: str) -> list:
                WHERE b.date=? AND b.status='active' ORDER BY b.time""", (day,)).fetchall()
 
 def get_upcoming_bookings(days: int = 7) -> list:
-    end = (date.today() + timedelta(days=days)).isoformat()
+    end = (_now().date() + timedelta(days=days)).isoformat()
     with _conn() as conn:
         return conn.execute(
             """SELECT b.*, m.name AS master_name, s.name AS svc_name,
@@ -220,19 +292,46 @@ def get_upcoming_bookings(days: int = 7) -> list:
                WHERE b.date BETWEEN date('now') AND ? AND b.status='active'
                ORDER BY b.date, b.time""", (end,)).fetchall()
 
-
-def get_bookings_for_reminder() -> list:
-    """Записи, начинающиеся через 29–31 минут (окно для напоминания за 30 мин)."""
-    now = datetime.now()
-    lo = now + timedelta(minutes=29)
-    hi = now + timedelta(minutes=31)
-    today = now.date().isoformat()
+def get_bookings_due_for_reminder(minutes_ahead: int, window: int = 1) -> list:
+    """Записи, начинающиеся через minutes_ahead ± window минут."""
+    now = _now()
+    lo = now + timedelta(minutes=minutes_ahead - window)
+    hi = now + timedelta(minutes=minutes_ahead + window)
+    lo_date = lo.date().isoformat()
+    hi_date = hi.date().isoformat()
     lo_t = f"{lo.hour:02d}:{lo.minute:02d}"
     hi_t = f"{hi.hour:02d}:{hi.minute:02d}"
     with _conn() as conn:
-        return conn.execute(
+        if lo_date == hi_date:
+            return conn.execute(
+                """SELECT b.*, s.name AS svc_name, s.emoji, s.duration
+                   FROM bookings b JOIN services s ON b.service_id=s.id
+                   WHERE b.date=? AND b.time BETWEEN ? AND ? AND b.status='active'
+                   ORDER BY b.time""",
+                (lo_date, lo_t, hi_t)).fetchall()
+        # Граничный случай: окно пересекает полночь (24ч напоминание)
+        r1 = conn.execute(
             """SELECT b.*, s.name AS svc_name, s.emoji, s.duration
                FROM bookings b JOIN services s ON b.service_id=s.id
-               WHERE b.date=? AND b.time BETWEEN ? AND ? AND b.status='active'
-               ORDER BY b.time""",
-            (today, lo_t, hi_t)).fetchall()
+               WHERE b.date=? AND b.time >= ? AND b.status='active'""",
+            (lo_date, lo_t)).fetchall()
+        r2 = conn.execute(
+            """SELECT b.*, s.name AS svc_name, s.emoji, s.duration
+               FROM bookings b JOIN services s ON b.service_id=s.id
+               WHERE b.date=? AND b.time <= ? AND b.status='active'""",
+            (hi_date, hi_t)).fetchall()
+        return list(r1) + list(r2)
+
+def get_bookings_export(days: int = 30) -> list:
+    today = _now().date().isoformat()
+    end   = (_now().date() + timedelta(days=days)).isoformat()
+    with _conn() as conn:
+        return conn.execute(
+            """SELECT b.id, b.date, b.time, b.user_name, b.phone,
+                      s.name AS svc_name, s.duration, s.price,
+                      b.status, m.name AS master_name
+               FROM bookings b JOIN masters m ON b.master_id=m.id
+               JOIN services s ON b.service_id=s.id
+               WHERE b.date BETWEEN ? AND ?
+               ORDER BY b.date, b.time""",
+            (today, end)).fetchall()
