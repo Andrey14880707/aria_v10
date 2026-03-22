@@ -105,8 +105,8 @@ def calendar_kb(service_id: int, duration: int) -> InlineKeyboardMarkup:
 
 def times_kb(slots: list, day_str: str, sid: int) -> InlineKeyboardMarkup:
     kb = InlineKeyboardMarkup(row_width=4)
-    for slot in slots:
-        kb.insert(InlineKeyboardButton(slot, callback_data=f"time:{slot}:{day_str}:{sid}"))
+    btns = [InlineKeyboardButton(slot, callback_data=f"time:{slot}:{day_str}:{sid}") for slot in slots]
+    kb.add(*btns)
     kb.add(InlineKeyboardButton("⬅️ Назад к календарю", callback_data=f"back:date:{sid}"))
     return kb
 
