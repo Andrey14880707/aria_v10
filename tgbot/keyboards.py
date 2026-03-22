@@ -1,11 +1,10 @@
-"""All keyboards for München Barber bot."""
+"""All keyboards for München Barber bot (aiogram 2.x)."""
 
 from datetime import date, timedelta
 from aiogram.types import (
     InlineKeyboardMarkup, InlineKeyboardButton,
     ReplyKeyboardMarkup, KeyboardButton,
 )
-from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 import config
 import db
@@ -15,57 +14,53 @@ RU_MONTHS = ["", "янв", "фев", "мар", "апр", "май", "июн",
              "июл", "авг", "сен", "окт", "ноя", "дек"]
 
 
+def fmt_date(day_str: str) -> str:
+    day = date.fromisoformat(day_str)
+    return f"{RU_DAYS[day.weekday()]}, {day.day} {RU_MONTHS[day.month]}"
+
+
 # ── Main menu ──────────────────────────────────────────────────────────────────
 
 def main_menu() -> ReplyKeyboardMarkup:
-    return ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="✂️ Записаться")],
-            [KeyboardButton(text="📋 Мои записи"), KeyboardButton(text="ℹ️ О нас")],
-        ],
-        resize_keyboard=True,
-    )
+    kb = ReplyKeyboardMarkup(resize_keyboard=True)
+    kb.add(KeyboardButton("✂️ Записаться"))
+    kb.row(KeyboardButton("📋 Мои записи"), KeyboardButton("ℹ️ О нас"))
+    return kb
 
 
 # ── Services ───────────────────────────────────────────────────────────────────
 
 def services_kb() -> InlineKeyboardMarkup:
-    builder = InlineKeyboardBuilder()
+    kb = InlineKeyboardMarkup(row_width=1)
     for s in db.get_services():
-        builder.button(
+        kb.add(InlineKeyboardButton(
             text=f"{s['name']} — {s['price']}€ ({s['duration']} мин)",
             callback_data=f"svc:{s['id']}",
-        )
-    builder.button(text="❌ Отмена", callback_data="cancel")
-    builder.adjust(1)
-    return builder.as_markup()
+        ))
+    kb.add(InlineKeyboardButton(text="❌ Отмена", callback_data="cancel"))
+    return kb
 
 
 # ── Masters ────────────────────────────────────────────────────────────────────
 
 def masters_kb(service_id: int) -> InlineKeyboardMarkup:
-    builder = InlineKeyboardBuilder()
-    builder.button(text="🎲 Любой мастер", callback_data=f"master:0:{service_id}")
+    kb = InlineKeyboardMarkup(row_width=1)
+    kb.add(InlineKeyboardButton(text="🎲 Любой мастер", callback_data=f"master:0:{service_id}"))
     for m in db.get_masters():
-        builder.button(
-            text=f"💈 {m['name']}",
-            callback_data=f"master:{m['id']}:{service_id}",
-        )
-    builder.button(text="⬅️ Назад", callback_data="back:service")
-    builder.adjust(1)
-    return builder.as_markup()
+        kb.add(InlineKeyboardButton(text=f"💈 {m['name']}", callback_data=f"master:{m['id']}:{service_id}"))
+    kb.add(InlineKeyboardButton(text="⬅️ Назад", callback_data="back:service"))
+    return kb
 
 
 # ── Dates ──────────────────────────────────────────────────────────────────────
 
 def dates_kb(service_id: int, master_id: int, duration: int) -> InlineKeyboardMarkup:
-    builder = InlineKeyboardBuilder()
+    kb = InlineKeyboardMarkup(row_width=2)
     today = date.today()
     found = 0
 
     for delta in range(config.DAYS_AHEAD):
         day = today + timedelta(days=delta)
-        # Check availability
         if master_id == 0:
             has_slot = db.any_master_has_slot(day, duration)
         else:
@@ -76,101 +71,80 @@ def dates_kb(service_id: int, master_id: int, duration: int) -> InlineKeyboardMa
 
         wd  = RU_DAYS[day.weekday()]
         mon = RU_MONTHS[day.month]
-        label = f"{wd}, {day.day} {mon}"
-        builder.button(
-            text=label,
+        kb.insert(InlineKeyboardButton(
+            text=f"{wd}, {day.day} {mon}",
             callback_data=f"date:{day.isoformat()}:{service_id}:{master_id}",
-        )
+        ))
         found += 1
 
     if found == 0:
-        builder.button(text="😔 Нет свободных дат", callback_data="noop")
+        kb.add(InlineKeyboardButton(text="😔 Нет свободных дат", callback_data="noop"))
 
-    builder.button(text="⬅️ Назад", callback_data="back:master")
-    builder.adjust(2)
-    return builder.as_markup()
+    kb.add(InlineKeyboardButton(text="⬅️ Назад", callback_data="back:master"))
+    return kb
 
 
 # ── Time slots ─────────────────────────────────────────────────────────────────
 
-def times_kb(
-    slots: list[str],
-    day_str: str,
-    service_id: int,
-    master_id: int,
-) -> InlineKeyboardMarkup:
-    builder = InlineKeyboardBuilder()
+def times_kb(slots: list, day_str: str, service_id: int, master_id: int) -> InlineKeyboardMarkup:
+    kb = InlineKeyboardMarkup(row_width=3)
     for slot in slots:
-        builder.button(
+        kb.insert(InlineKeyboardButton(
             text=slot,
             callback_data=f"time:{slot}:{day_str}:{service_id}:{master_id}",
-        )
-    builder.button(text="⬅️ Назад", callback_data="back:date")
-    builder.adjust(3)
-    return builder.as_markup()
+        ))
+    kb.add(InlineKeyboardButton(text="⬅️ Назад", callback_data="back:date"))
+    return kb
 
 
 # ── Phone ──────────────────────────────────────────────────────────────────────
 
 def phone_kb() -> ReplyKeyboardMarkup:
-    return ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="📱 Поделиться номером", request_contact=True)],
-            [KeyboardButton(text="⏭ Пропустить")],
-        ],
-        resize_keyboard=True,
-        one_time_keyboard=True,
-    )
+    kb = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+    kb.add(KeyboardButton(text="📱 Поделиться номером", request_contact=True))
+    kb.add(KeyboardButton(text="⏭ Пропустить"))
+    return kb
 
 
-# ── Confirm booking ────────────────────────────────────────────────────────────
+# ── Confirm ────────────────────────────────────────────────────────────────────
 
 def confirm_kb(service_id: int, master_id: int, day: str, time: str) -> InlineKeyboardMarkup:
-    builder = InlineKeyboardBuilder()
-    builder.button(text="✅ Подтвердить", callback_data=f"confirm:{service_id}:{master_id}:{day}:{time}")
-    builder.button(text="❌ Отмена",      callback_data="cancel")
-    builder.adjust(2)
-    return builder.as_markup()
+    kb = InlineKeyboardMarkup(row_width=2)
+    kb.add(
+        InlineKeyboardButton(text="✅ Подтвердить", callback_data=f"confirm:{service_id}:{master_id}:{day}:{time}"),
+        InlineKeyboardButton(text="❌ Отмена",      callback_data="cancel"),
+    )
+    return kb
 
 
 # ── My bookings ────────────────────────────────────────────────────────────────
 
 def my_bookings_kb(bookings: list) -> InlineKeyboardMarkup:
-    builder = InlineKeyboardBuilder()
+    kb = InlineKeyboardMarkup(row_width=1)
     for b in bookings:
         day = date.fromisoformat(b["date"])
         wd  = RU_DAYS[day.weekday()]
         mon = RU_MONTHS[day.month]
-        builder.button(
+        kb.add(InlineKeyboardButton(
             text=f"{wd} {day.day} {mon} {b['time']} — {b['svc_name']}",
             callback_data=f"view_booking:{b['id']}",
-        )
-    builder.adjust(1)
-    return builder.as_markup()
+        ))
+    return kb
 
 
 def booking_detail_kb(bid: int) -> InlineKeyboardMarkup:
-    builder = InlineKeyboardBuilder()
-    builder.button(text="❌ Отменить запись", callback_data=f"cancel_booking:{bid}")
-    builder.button(text="⬅️ Назад",           callback_data="back:my_bookings")
-    builder.adjust(1)
-    return builder.as_markup()
+    kb = InlineKeyboardMarkup(row_width=1)
+    kb.add(InlineKeyboardButton(text="❌ Отменить запись", callback_data=f"cancel_booking:{bid}"))
+    kb.add(InlineKeyboardButton(text="⬅️ Назад",           callback_data="back:my_bookings"))
+    return kb
 
 
 # ── Admin ──────────────────────────────────────────────────────────────────────
 
 def admin_booking_kb(bid: int) -> InlineKeyboardMarkup:
-    builder = InlineKeyboardBuilder()
-    builder.button(text="✅ Выполнено",  callback_data=f"admin_done:{bid}")
-    builder.button(text="❌ Отменить",   callback_data=f"admin_cancel:{bid}")
-    builder.adjust(2)
-    return builder.as_markup()
-
-
-# ── Helpers ────────────────────────────────────────────────────────────────────
-
-def fmt_date(day_str: str) -> str:
-    day = date.fromisoformat(day_str)
-    wd  = RU_DAYS[day.weekday()]
-    mon = RU_MONTHS[day.month]
-    return f"{wd}, {day.day} {mon}"
+    kb = InlineKeyboardMarkup(row_width=2)
+    kb.add(
+        InlineKeyboardButton(text="✅ Выполнено", callback_data=f"admin_done:{bid}"),
+        InlineKeyboardButton(text="❌ Отменить",  callback_data=f"admin_cancel:{bid}"),
+    )
+    return kb

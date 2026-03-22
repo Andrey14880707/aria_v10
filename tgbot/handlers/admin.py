@@ -1,33 +1,19 @@
-"""Admin commands — only for users listed in ADMIN_IDS."""
+"""Admin commands (aiogram 2.x)."""
 
 from datetime import date, timedelta
 
-from aiogram import Router, F, Bot
-from aiogram.filters import Command
+from aiogram import Dispatcher, Bot
 from aiogram.types import Message, CallbackQuery
-from aiogram.filters.base import Filter
 
 import config
 import db
 import keyboards as kb
 from keyboards import RU_DAYS, RU_MONTHS, fmt_date
 
-router = Router()
 
+def _is_admin(uid: int) -> bool:
+    return uid in config.ADMIN_IDS
 
-class IsAdmin(Filter):
-    async def __call__(self, obj) -> bool:
-        uid = getattr(obj, "from_user", None)
-        if uid is None:
-            return False
-        return uid.id in config.ADMIN_IDS
-
-
-router.message.filter(IsAdmin())
-router.callback_query.filter(IsAdmin())
-
-
-# ── /admin — menu ──────────────────────────────────────────────────────────────
 
 ADMIN_HELP = (
     "🛠 <b>Админ-панель München Barber</b>\n\n"
@@ -38,131 +24,115 @@ ADMIN_HELP = (
 )
 
 
-@router.message(Command("admin"))
 async def cmd_admin(msg: Message) -> None:
-    await msg.answer(ADMIN_HELP, parse_mode="HTML")
+    if not _is_admin(msg.from_user.id): return
+    await msg.answer(ADMIN_HELP)
 
 
-# ── /today ─────────────────────────────────────────────────────────────────────
-
-@router.message(Command("today"))
 async def cmd_today(msg: Message) -> None:
-    await _send_day_bookings(msg, date.today())
+    if not _is_admin(msg.from_user.id): return
+    await _send_day(msg, date.today())
 
 
-@router.message(Command("tomorrow"))
 async def cmd_tomorrow(msg: Message) -> None:
-    await _send_day_bookings(msg, date.today() + timedelta(days=1))
+    if not _is_admin(msg.from_user.id): return
+    await _send_day(msg, date.today() + timedelta(days=1))
 
 
-async def _send_day_bookings(msg: Message, day: date) -> None:
+async def _send_day(msg: Message, day: date) -> None:
     bookings = db.get_bookings_for_date(day.isoformat())
-    wd  = RU_DAYS[day.weekday()]
-    mon = RU_MONTHS[day.month]
-    header = f"📅 <b>{wd}, {day.day} {mon}</b> — {len(bookings)} записей\n"
-
+    header = f"📅 <b>{RU_DAYS[day.weekday()]}, {day.day} {RU_MONTHS[day.month]}</b> — {len(bookings)} записей"
     if not bookings:
-        await msg.answer(header + "\nЗаписей нет.", parse_mode="HTML")
+        await msg.answer(header + "\n\nЗаписей нет.")
         return
-
-    await msg.answer(header, parse_mode="HTML")
+    await msg.answer(header)
     for b in bookings:
-        text = (
+        await msg.answer(
             f"🕐 <b>{b['time']}</b> | 💈 {b['master_name']}\n"
             f"✂️ {b['svc_name']} ({b['duration']} мин, {b['price']}€)\n"
             f"👤 @{b['user_name'] or '—'} | 📱 {b['phone'] or '—'}\n"
-            f"🔖 #{b['id']}"
+            f"🔖 #{b['id']}",
+            reply_markup=kb.admin_booking_kb(b["id"]),
         )
-        await msg.answer(text, reply_markup=kb.admin_booking_kb(b["id"]), parse_mode="HTML")
 
 
-# ── /week ──────────────────────────────────────────────────────────────────────
-
-@router.message(Command("week"))
 async def cmd_week(msg: Message) -> None:
+    if not _is_admin(msg.from_user.id): return
     bookings = db.get_upcoming_bookings(days=7)
     if not bookings:
-        await msg.answer("📭 Нет записей на ближайшие 7 дней.")
+        await msg.answer("📭 Нет записей на 7 дней.")
         return
-
-    # Group by date
-    by_date: dict[str, list] = {}
+    by_date: dict = {}
     for b in bookings:
         by_date.setdefault(b["date"], []).append(b)
-
     lines = [f"📆 <b>Записи на 7 дней</b> (всего: {len(bookings)})\n"]
     for day_str, bs in sorted(by_date.items()):
         day = date.fromisoformat(day_str)
-        wd  = RU_DAYS[day.weekday()]
-        mon = RU_MONTHS[day.month]
-        lines.append(f"\n<b>{wd}, {day.day} {mon}</b> ({len(bs)} записей):")
+        lines.append(f"\n<b>{RU_DAYS[day.weekday()]}, {day.day} {RU_MONTHS[day.month]}</b>:")
         for b in bs:
             lines.append(f"  • {b['time']} {b['master_name']} — {b['svc_name']} | @{b['user_name'] or '—'}")
+    await msg.answer("\n".join(lines))
 
-    await msg.answer("\n".join(lines), parse_mode="HTML")
 
-
-# ── /stats ─────────────────────────────────────────────────────────────────────
-
-@router.message(Command("stats"))
 async def cmd_stats(msg: Message) -> None:
+    if not _is_admin(msg.from_user.id): return
     bookings = db.get_upcoming_bookings(days=30)
-    total_price = sum(b["price"] for b in bookings)
     await msg.answer(
-        f"📊 <b>Статистика (следующие 30 дней)</b>\n\n"
+        f"📊 <b>Следующие 30 дней</b>\n\n"
         f"📋 Записей: {len(bookings)}\n"
-        f"💰 Выручка: {total_price}€",
-        parse_mode="HTML",
+        f"💰 Выручка: {sum(b['price'] for b in bookings)}€"
     )
 
 
-# ── Admin actions on bookings ──────────────────────────────────────────────────
-
-@router.callback_query(F.data.startswith("admin_done:"))
-async def admin_done(cb: CallbackQuery, bot: Bot) -> None:
+async def admin_done(cb: CallbackQuery) -> None:
+    if not _is_admin(cb.from_user.id):
+        await cb.answer("Нет доступа", show_alert=True)
+        return
     bid = int(cb.data.split(":")[1])
-    b = db.get_booking(bid)
-    ok = db.mark_done(bid)
+    b   = db.get_booking(bid)
+    ok  = db.mark_done(bid)
     if ok:
-        await cb.message.edit_text(
-            cb.message.text + "\n\n✅ <b>Отмечено как выполнено</b>",
-            parse_mode="HTML",
-        )
-        # Notify client
+        await cb.message.edit_text(cb.message.text + "\n\n✅ <b>Выполнено</b>")
         if b:
             try:
-                await bot.send_message(
+                await Bot.get_current().send_message(
                     b["user_id"],
-                    f"✅ Спасибо за визит! Твоя запись #{bid} в München Barber завершена.\n"
-                    "Будем рады видеть тебя снова! ✂️",
+                    f"✅ Спасибо за визит! Запись #{bid} завершена. Ждём снова! ✂️"
                 )
             except Exception:
                 pass
-        await cb.answer("Отмечено как выполнено")
+        await cb.answer("Отмечено")
     else:
-        await cb.answer("Не удалось обновить", show_alert=True)
+        await cb.answer("Ошибка", show_alert=True)
 
 
-@router.callback_query(F.data.startswith("admin_cancel:"))
-async def admin_cancel(cb: CallbackQuery, bot: Bot) -> None:
+async def admin_cancel(cb: CallbackQuery) -> None:
+    if not _is_admin(cb.from_user.id):
+        await cb.answer("Нет доступа", show_alert=True)
+        return
     bid = int(cb.data.split(":")[1])
-    b = db.get_booking(bid)
-    ok = db.admin_cancel_booking(bid)
+    b   = db.get_booking(bid)
+    ok  = db.admin_cancel_booking(bid)
     if ok:
-        await cb.message.edit_text(
-            cb.message.text + "\n\n❌ <b>Запись отменена</b>",
-            parse_mode="HTML",
-        )
-        # Notify client
+        await cb.message.edit_text(cb.message.text + "\n\n❌ <b>Отменено</b>")
         if b:
             try:
-                await bot.send_message(
+                await Bot.get_current().send_message(
                     b["user_id"],
-                    f"😔 К сожалению, твоя запись #{bid} в München Barber отменена мастером.\n"
-                    "Пожалуйста, запишись на другое время.",
+                    f"😔 Запись #{bid} отменена мастером. Пожалуйста, запишись на другое время."
                 )
             except Exception:
                 pass
-        await cb.answer("Запись отменена")
+        await cb.answer("Отменено")
     else:
-        await cb.answer("Не удалось отменить", show_alert=True)
+        await cb.answer("Ошибка", show_alert=True)
+
+
+def register(dp: Dispatcher) -> None:
+    dp.register_message_handler(cmd_admin,    commands=["admin"])
+    dp.register_message_handler(cmd_today,    commands=["today"])
+    dp.register_message_handler(cmd_tomorrow, commands=["tomorrow"])
+    dp.register_message_handler(cmd_week,     commands=["week"])
+    dp.register_message_handler(cmd_stats,    commands=["stats"])
+    dp.register_callback_query_handler(admin_done,   lambda c: c.data.startswith("admin_done:"))
+    dp.register_callback_query_handler(admin_cancel, lambda c: c.data.startswith("admin_cancel:"))
