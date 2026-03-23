@@ -6,10 +6,22 @@ from pathlib import Path
 from typing import Optional
 from zoneinfo import ZoneInfo
 
+try:
+    import tzdata  # noqa: F401 — ensures tzdata is loaded on systems without /usr/share/zoneinfo
+except ImportError:
+    pass
+
 import config
 
 DB_PATH = Path(__file__).parent / "barber.db"
-_tz = ZoneInfo(config.TIMEZONE)
+
+try:
+    _tz = ZoneInfo(config.TIMEZONE)
+except Exception:
+    import logging as _log
+    _log.warning("ZoneInfo '%s' not found — falling back to UTC", config.TIMEZONE)
+    from datetime import timezone as _timezone
+    _tz = _timezone.utc  # type: ignore[assignment]
 
 
 def _now() -> datetime:
